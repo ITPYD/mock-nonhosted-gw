@@ -1,0 +1,79 @@
+{% extends 'layout.html' %}
+
+{% block contentA %}
+<div class="container">
+    <div class="row">
+        <form method="POST" action="/add_redirection_url">
+            {{ form.hidden_tag() }}
+            <fieldset>
+                <h5 class="card-text">Redirection URL</h5>
+                <hr>
+
+                <div class="form-group ">
+                    {{ form.key.label(class_="form-control-label") }}
+                    {{ form.key(class="form-control form-control-sm") }}
+                </div>
+                <div class="form-group ">
+                    {{ form.mid.label(class_="form-control-label") }}
+                    {{ form.mid(class="form-control form-control-sm") }}
+                </div>
+                <div class="form-group ">
+                    {{ form.url.label(class_="form-control-label") }}
+                    {{ form.url(class="form-control form-control-sm") }}
+                </div>
+                <div class="form-group ">
+                    {{ form.status_url.label(class_="form-control-label") }}
+                    {{ form.status_url(class="form-control form-control-sm") }}
+                </div>
+                <div class="form-group ">
+                    {{ form.enable.label(class_="form-control-label") }}
+                    {{ form.enable(class="form-control form-control-sm") }}
+                </div>
+            </fieldset>
+
+            <div class="field-group mt-4">
+                <!--div class="text-right"-->
+                {{ form.add(class="btn btn-dark text-right") }}
+                <!--/div-->
+            </div>
+        </form>
+    </div>
+    <br><br>
+
+    <div class="row">
+        <div class="col">
+            <h6 class="card-text">List of Redirection URL</h6>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Key</th>
+                        <th scope="col">Merchant ID</th>
+                        <th scope="col">URLs</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in proxy %}
+                    <tr>
+                        <th scope="row">{{ p.id }}</th>
+                        <td class="font-weight-normal small">{{ p.key }}</td>
+                        <td class="font-weight-normal small">{{ p.mid }}</td>
+                        <td class="font-weight-normal small"><strong>Redirect</strong><br /> {{ p.url }}<br /><strong>Status:</strong><br />{{ p.status_url }}</td>
+                        {% if p.enable=='Y' %}
+                        <td class="
+                         small"><a href="/toggle_redirection_url/{{p.id}}" class="btn btn-dark btn-sm">Disable</a></td>
+                        {% else %}
+                        <td class="font-weight-normal small"><a href="/toggle_redirection_url/{{p.id}}" class="btn btn-dark btn-sm">Enable</a></td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+
+        </div>
+    </div>
+</div>
+{% endblock contentA %}

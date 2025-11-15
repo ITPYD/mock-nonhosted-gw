@@ -1,0 +1,376 @@
+{% extends 'layout.html' %}
+
+{% block contentA %}
+<div class="container">
+
+    <div class="row my-5">
+        <h2 id="security-mac-validation">MAC Validation</h2>
+        <p>Your application communicates with Paydee’s MPI Server over secured HTTPS. The message integrity
+            is enforced by validating the MAC (Message Authentication Code) signature of the message.  This ensures the payload wasn’t tampered mid transfer. </p>
+        <br>
+        <div class="row ">
+            <div class="card border-0">
+                <div class="card-body text-center px-5">
+                    <h5 class="card-title text-center">How It Works</h5>
+                    <div class="text-center">
+                        <img src="{{url_for('static', filename='img/Group_50.png')}}">
+                    </div>
+                    <p class="strong my-0">Step 00</p>
+                    <p class="my-0">(One Time Setup)</p>
+                    <br>
+                    <p>Upload a public RSA key to Paydee’s MPI Server.</p>
+                    <p><strong>Important</strong> Do not disclose your private RSA key. Please keep it in a secure location.</p>
+
+                </div>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div class="card bg-light border-0">
+                <div class="card-body text-center px-5">
+                    <h5 class="card-title">Payment Session Validation</h5>
+                    <p class="card-text">Repeat this process every for new payment session</p>
+                    <br>
+                    <div class="row">
+                        <div class="col-sm-4 p-4">
+                            <img class="py-2" src="{{url_for('static', filename='img/Group_53.png')}}">
+                            <p class="strong my-0">Step 01</p>
+                            <br>
+                            <p>Generate a new pair of RSA keys.</p>
+                            <p>Exchange public keys with Paydee MPI Server.</p>
+                        </div>
+                        <div class="col-sm-4 p-4">
+                            <img class="py-3" src="{{url_for('static', filename='img/Group_51.png')}}">
+                            <p class="strong my-0">Step 02</p>
+                            <br>
+                            <p>Generate your Message Authentication Code (MAC) with your private RSA key.</p>
+                            <p>Send your message & MAC to Paydee’s MPI Server.</p>
+                        </div>
+                        <div class="col-sm-4 p-4">
+                            <img class="py-3" src="{{url_for('static', filename='img/Group_52.png')}}">
+                            <p class="strong my-0">Step 03</p>
+                            <br>
+                            <p>Validate the MAC key with the sender’s public RSA key.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <div id="mac-process" class="row my-3">
+        <h2>Keys Exchange Process</h2>
+
+        <p>There are 3 important steps in MAC validation.</p>
+
+        <p class="ml-5 my-0">Step 1: Exchange of public RSA keys</p>
+        <p class="ml-5 my-0">Step 2: Generate MAC signature</p>
+        <p class="ml-5 my-0">Step 3: Validate MAC signature</p>
+
+        <p>Subsequent section will cover each step in details.</p>
+    </div>
+
+    <div class="row my-3">
+        <h6>Step 1: Exchange Public Key</h6>
+        <p>At the beginning of a new session, both endpoints must generate a pair of public and prive RSA keys. The public keys are then encoded and exchanged.
+            Therefore, each endpoint get a copy of the other's public RSA key.
+        </p>
+        <div class="row d-flex justify-content-center m-2">
+            <img class="w-50" src="{{url_for('static', filename='img/Group_30.png')}}">
+        </div>
+
+        <div class="row d-flex justify-content-center">
+            <div class="col-sm-6"></div>
+            <div class="col-sm-6">
+                <div class="card bg-light border-0">
+                    <div class="card-body text-left small">
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td class="align-top pt-2"><img class="w-50"
+                                            src="{{url_for('static', filename='img/key_1.png')}}"></td>
+                                    <td class="align-top pt-2">Public RSA 2048 bit key</td>
+                                </tr>
+                                <tr>
+                                    <td class="align-top pt-2"><img class="w-50"
+                                            src="{{url_for('static', filename='img/key_3.png')}}"></td>
+                                    <td class="align-top pt-2">Private RSA 2048 bit key</td>
+                                </tr>
+                                <tr>
+                                    <td class="align-top pt-2"><img class="w-50"
+                                            src="{{url_for('static', filename='img/key_2.png')}}"></td>
+                                    <td class="align-top pt-2">Base64 Encoded Public RSA 2048 bit key
+                                        <p class="ml-2 my-0">‘-’ converted to ‘+’</p>
+                                        <p class="ml-2 my-0">‘/’ converted to ‘_’</p>
+                                        <p class="ml-2 my-0">‘=” omitted</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <br>
+                    <a href="/download/Sample.Data.xlsx"
+                        class="text-center text-decoration-underline text-dark">Download Example</a>
+                    <br>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row my-3">
+        <h6>Step 2: Generate MAC signature</h6>
+        <p>A MAC signature can be regarded as the encrypted value of the whole message. Below is an example of a whole message:</p>
+
+        <div class="row">
+            <div class="col"></div>
+            <div class="col-sm-6">
+                <table class="table table-borderless table-sm">
+                    <thead>
+                        <tr>
+                            <th scope="col"><small>Message Control</small></th>
+                            <th scope="col"><small>Value</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="py-0"><small>MPI_TRANS_TYPE:</small></td>
+                            <td class="py-0"><small>SALES</small></td>
+                        </tr>
+                        <tr>
+                            <td class="py-0"><small>MPI_PURCH_AMT:</small></td>
+                            <td class="py-0"><small>100</small></td>
+                        </tr>
+                        <tr>
+                            <td class="py-0"><small>MPI_CARD_HOLDER_NAME:</small></td>
+                            <td class="py-0"><small>TestUser</small></td>
+                        </tr>
+                        <tr>
+                            <td class="py-0"><small>MPI_PAN:</small></td>
+                            <td class="py-0"><small>5100000000000100</small></td>
+                        </tr>
+                        <tr>
+                            <td class="py-0"><small>MPI_PAN_EXP:</small></td>
+                            <td class="py-0"><small>2508</small></td>
+                        </tr>
+                        <tr>
+                            <td class="py-0"><small>MPI_CVV2:</small></td>
+                            <td class="py-0"><small>123</small></td>
+                        </tr>
+                        <tr>
+                            <td class="py-0"><small>MPI_TRXN_ID:</small></td>
+                            <td class="py-0"><small>txid20211018235911</small></td>
+                        </tr>
+                        <tr>
+                            <td class="py-0"><small>MPI_PURCH_DATE:</small></td>
+                            <td class="py-0"><small>20211018235911</small></td>
+                        </tr>
+                        <tr>
+                            <td class="py-0"><small>MPI_PURCH_CURR:</small></td>
+                            <td class="py-0"><small>458</small></td>
+                        </tr>
+                        <tr>
+                            <td class="py-0"><small>MPI_ADDR_MATCH:</small></td>
+                            <td class="py-0"><small>N</small></td>
+                        </tr>
+                        <tr>
+                            <td class="py-0"><small>MPI_MERC_ID:</small></td>
+                            <td class="py-0"><small>000000000000051</small></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col"></div>
+        </div>
+
+        <p>A MAC is generated by concatenating all the message components, hashed with SHA256 and signed with own Private RSA key. </p>
+
+        <div class="row d-flex justify-content-center m-2">
+            <img class="w-100" src="{{url_for('static', filename='img/Group_33.png')}}">
+        </div>
+
+        <div class="row d-flex justify-content-center m-2">
+            <img class="w-50" src="{{url_for('static', filename='img/Group_58.png')}}">
+        </div>
+
+        <div class="row d-flex justify-content-center">
+            <div class="col-sm-6"></div>
+            <div class="col-sm-6">
+                <div class="card bg-light border-0">
+                    <div class="card-body text-center small">
+                        <p>The message has to be concatenated in the right sequence. Note, there should not be any <u>SPACE</u>s in between the message components. The symbol "=" in the signature must be omitted too.
+                        </p>
+                        <p>Download these helpful resources:</p>
+                    </div>
+                    <br>
+                    <a href="/download/MAC.Sequence.xlsx"
+                        class="text-center text-decoration-underline text-dark">Message Concatenation Sequence</a>
+                    <a href="/download/Sample.Data.xlsx" class="text-center text-decoration-underline text-dark">MAC
+                        Sample Data</a>
+                    <br>
+                </div>
+            </div>
+        </div>
+        <p>To send a message, the originating endpoint sends a message together with the MAC signature.
+            The receiving endpoint must validate the message against the MAC signature. This ensures that message is authentic and has not been tampered with. </p>
+    </div>
+
+    <div class="row my-3">
+        <h6>Step 3: Validate MAC signature</h6>
+        <p>Follow these simple guides to validate a MAC signature.</p>
+        <p class="ml-5 mt-0"> i. Restore MAC signature by appending the missing ‘=’ symbol that has been omitted by the sender
+            and decode using Base64 algorithm.</p>
+
+        <div class="row d-flex justify-content-center">
+            <div class="col-sm-2"></div>
+            <div class="col-sm-8">
+                <div class="card bg-light border-0">
+                    <div class="card-body text-left small">
+                        <div class="row d-flex justify-content-center">
+                            <div class="col-sm-1"><img class="w-20"
+                                    src="{{url_for('static', filename='img/shield.png')}}"></div>
+                            <div class="col-sm-5">MAC signature<br />‘=” appended</div>
+                            <div class="col">
+                                <h4>+</h4>
+                            </div>
+                            <div class="col-sm-4">Base64<br />Decode</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-2"></div>
+        </div>
+
+        <p class="ml-5 mt-0"> ii. Concatenate the message received.</p>
+
+        <div class="row d-flex justify-content-center">
+            <div class="col-sm-2"></div>
+            <div class="col-sm-8">
+                <div class="card bg-light border-0">
+                    <div class="card-body text-left small">
+                        <div class="row d-flex justify-content-center">
+                            <div class="col-sm-1"><img class="w-20"
+                                    src="{{url_for('static', filename='img/key_1.png')}}"></div>
+                            <div class="col-sm-5">Base64 Decode Public RSA 2048 bit key
+                                <br />‘+’ converted to ‘-’
+                                <br />‘_’ converted to ‘/’
+                                <br />‘=’ appended
+                            </div>
+                            <div class="col">
+                                <h4>+</h4>
+                            </div>
+                            <div class="col-sm-4"># SHA256</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-2"></div>
+        </div>
+
+        <p class="ml-5 mt-0"> iii. Concatenate all message components received.</p>
+
+        <div class="row d-flex justify-content-center m-2">
+            <img class="w-100" src="{{url_for('static', filename='img/Group_33.png')}}">
+        </div>
+
+        <p class="ml-5 mt-0"> iv. Use OpenSSL library to load the key and verify the concatenated
+            message against the restored MAC signature. </p>
+
+        <p>Done!</p>
+    </div>
+
+    <div class="container">
+        <div class="row my-5" id="mac-validation">
+            <h2>Verify Your MAC</h2>
+            <p>This is a simple MAC verification tool. Use it to verify and debug your application.</p>
+        </div>
+
+        <!--div class="row my-0" style="height: 300px; background-color: rgba(255,0,0,0.1);"></div-->
+        <div class="row my-0" style="height: 300px;">
+            <div class="col-sm-6">
+                <div class="input-group">
+                    <img style="height: 20px;" src="{{url_for('static', filename='img/key_1.png')}}">
+                    <small class="mx-2">Public RSA 2048 bit key</small>
+                </div>
+                <textarea readonly class="w-100 h-75 form-control bg-light form-control-sm"
+                    aria-label="With textarea">{{public}}</textarea>
+                    
+                <form method="POST" action="/mac/upload_public_rsa" enctype="multipart/form-data">
+                    <div class="form-group my-1">
+                        <input type="file" class="form-control-file form-control-sm" name="public_rsa">
+                    </div>
+                    <button type="submit" class="btn btn-dark my-1 mx-2 btn-sm">Upload</button>
+                </form>                    
+            </div>
+
+            <div class="col-sm-6">
+                <div class="input-group">
+                    <img style="height: 20px;" src="{{url_for('static', filename='img/key_3.png')}}">
+                    <small class="mx-2">Private RSA 2048 bit key</small>
+                </div>
+                <textarea readonly class="w-100 h-75 form-control bg-light form-control-sm"
+                    aria-label="With textarea">{{private}}</textarea>
+                <form method="POST" action="/mac/upload_private_rsa" enctype="multipart/form-data">
+                    <div class="form-group my-1">
+                        <input type="file" class="form-control-file form-control-sm" name="private_rsa">
+                    </div>
+                    <button type="submit" class="btn btn-dark my-1 mx-1 btn-sm">Upload</button>
+                </form>                    
+            </div>
+        </div>
+
+
+        <div class="row input-group my-4">
+            <form action="/mac/generate_rsa">
+                <div class="input-group my-4">
+                <!--p class="font-weight-light my-4 mx-4">I wish to generate a new pair of RSA key instead</p-->
+                <button type="submit" class=" font-italic btn btn-link btn-sm font-weight-light">>>I wish to generate a new pair of RSA key instead.</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="row my-4">
+                <form method="POST" action="/mac/validate">
+            
+                    <div id="mac-signature" class="form-group">
+                        <h6>Data (HTTP POST Form Data)</h6>
+                        <p class="font-weight-light font-italic form-control-sm"><strong>Important:</strong> The Form Data for MPI Request and MPI
+                            Response is different. Click <a href="/download/MAC.Sequence.xlsx">here</a> for more information.</p>
+                        {{ form.data(class="form-control form-control-sm") }}
+                    </div>
+            
+                    <div class="input-group mt-4">
+                        <img style="height: 20px;"  src="{{url_for('static', filename='img/shield.png')}}">
+                        <p class="ml-2">MAC Signature</p>
+                    </div>
+                    <div class="form-group">
+                        {{ form.mac(class="form-control form-control-sm") }}
+                    </div>
+
+                    <div class="field-group my-4 input-group">
+                        {{ form.verify(class="btn btn-dark") }}
+                        <btn class="btn btn-outline-teal">{{result}}</btn>
+                    </div>
+                    <div>
+                        {{ form.sign_mac(class="btn btn-link btn-sm font-weight-light font-italic") }}
+                    </div>
+                  
+                </form>
+            
+        </div>
+
+
+        </div>
+    </div>
+   
+    {% if scrollToAnchor %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.location.hash = '#{{ scrollToAnchor }}';
+        });
+    </script>
+    {% endif %}    
+{% endblock contentA %}

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MPI</title>
+
+    <!-- Bootstrap 5 CSS only -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha2/css/bootstrap.min.css"
+        integrity="sha384-DhY6onE6f3zzKbjUPRc2hOzGAdEf4/Dz+WJwBvEYL/lkkIsI3ihufq9hk9K4lVoK" crossorigin="anonymous">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{url_for('static', filename='main.css')}}">
+
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col">
+
+
+                <p class="mt-5 text-centre">Loading...</p>
+
+                <form id="form1" method="POST" action="https://devlink.paydee.co/mpi/mercReq">
+                    {{ form.hidden_tag() }}
+                    <fieldset>
+
+                        <div class="form-group invisible">
+                            {{ form.MPI_PURCH_AMT.label(class_="form-control-label") }}
+                            {{ form.MPI_PURCH_AMT(class="form-control form-control-sm") }}
+                        </div>
+
+                        <div class="form-group invisible">
+                            {{ form.MPI_TRANS_TYPE.label(class_="form-control-label") }}
+                            {{ form.MPI_TRANS_TYPE(class="form-control form-control-sm") }}
+                        </div>
+
+                        <div class="form-group invisible">
+                            {{ form.MPI_MAC.label(class_="form-control-label") }}
+                            {{ form.MPI_MAC(class="form-control form-control-sm") }}
+                        </div>
+
+                        <div class="form-group invisible">
+                            {{ form.MPI_TRXN_ID.label(class_="form-control-label") }}
+                            {{ form.MPI_TRXN_ID(class="form-control form-control-sm") }}
+                        </div>
+
+                        <div class="form-group invisible">
+                            {{ form.MPI_PURCH_DATE.label(class_="form-control-label") }}
+                            {{ form.MPI_PURCH_DATE(class="form-control form-control-sm") }}
+                        </div>                        
+
+                        <div class="form-group invisible">
+                            {{ form.MPI_PURCH_CURR.label(class_="form-control-label") }}
+                            {{ form.MPI_PURCH_CURR(class="form-control form-control-sm") }}
+                        </div>      
+
+                        <div class="form-group invisible">
+                            {{ form.MPI_MERC_ID.label(class_="form-control-label") }}
+                            {{ form.MPI_MERC_ID(class="form-control form-control-sm") }}
+                        </div> 
+
+                    </fieldset>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+</body>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha2/js/bootstrap.bundle.min.js"
+    integrity="sha384-BOsAfwzjNJHrJ8cZidOg56tcQWfp6y72vEJ8xQ9w6Quywb24iOsW913URv1IS4GD"
+    crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script>
+
+    $(document).ready(Sign)
+
+    function Sign() {
+        console.log('Signing the data')
+        var f = document.forms["form1"];
+
+        $.ajax({
+            type: "POST",
+            url: "sign_data",
+            data: $('#form1').serialize(),
+            success: function (response) {
+                var result = response;
+
+                if (result != " ") {
+                    f.MPI_MAC.value = result;
+                    f.submit();
+
+                } else {
+                    alert("Failed to sign the data.");
+                }
+            },
+            error: function (e) {
+                alert("Failed to sign the data. Please try again.");
+            }
+        });
+    }
+
+
+</script>
+
+</html>

@@ -1,0 +1,45 @@
+{% extends 'layout.html' %}
+
+{% block contentA %}
+<div class="container">
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        <fieldset>
+            <legend class="border-bottom mb-4">Welcome Back!</legend>
+            
+            <div class="form-group">
+                {{ form.email.label(class="form-control-label") }}
+                
+                {% if form.email.errors %}
+                    {% for error in form.email.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                    {{ form.email(class="form-control form-control-lg is-invalid") }}
+                {% else %}
+                    {{ form.email(class="form-control form-control-lg") }} 
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.password.label(class="form-control-label") }}
+                
+                {% if form.password.errors %}
+                    {% for error in form.password.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                    {{ form.password(class="form-control form-control-lg is-invalid") }}
+                {% else %}
+                    {{ form.password(class="form-control form-control-lg") }} 
+                {% endif %}
+            </div>
+
+        </fieldset>
+        <div class="field-group mt-4">
+            {{ form.submit(class="btn btn-dark") }}
+        </div>
+    </form>
+
+    <br />
+    <a href="/reset_password">Forgot password</a>
+</div>
+{% endblock contentA %}

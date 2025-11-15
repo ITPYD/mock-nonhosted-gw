@@ -1,0 +1,131 @@
+{% extends 'layout.html' %}
+
+{% block contentA %}
+<div class="container">
+    <!--div class="row my-5">
+        <h2>Use Case</h2>
+        <p>Our APIs can be used to enable users to checkout from online stores and offer subscription services.</p>
+        <br>
+        <p>
+            If our API is unable to meet your requirement, <a href="mailto: product@paydee.co">write to us</a>. Our team
+            is ready to explore solutions with you.
+        </p>
+    </div-->
+
+    <div class="row my-5">
+        <h2 id="sales">Sample Checkout Form</h2>
+        <p>Paydee’s SALES API offers Frictionless Flow (*new).
+            See how these payment pages work.
+        </p>
+        <br>
+
+        <div class="row d-flex justify-content-center">
+            <div class="col-sm-7">
+                <iframe src="/hosted" height="550" width="350" frameborder="0"></iframe>
+            </div>
+            <div class="col-sm-5">
+
+                <p class="ml-2 my-0 p-0">Card Holder Name: Test Card</p>
+                <p class="ml-2 my-0 p-0">Expiry: 2508</p>
+                <p class="ml-2 my-0 p-0">CVV: 123</p>
+
+                <h6 class="ml-0 mt-2">Frictionless Checkout Experience</h6>
+                <table class="mx-5 my-0">
+                    <tbody>
+                        <tr>
+                            <td>
+                                <p class="text-end m-2 small text-right">VISA</p>
+                            </td>
+                            <td>
+                                <div class="card bg-light border-0">
+                                    <div class="card-body text-center m-0 py-0 px-2 small">
+                                        4100000000000100
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p class="text-end m-2 small text-right">Mastercard</p>
+                            </td>
+                            <td>
+                                <div class="card bg-light border-0">
+                                    <div class="card-body text-center m-0 py-0 px-2 small">
+                                        5100000000000107
+                                    </div>
+                                </div>
+                            </td>
+
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h6 class="ml-0 mt-2">Challenge Flow Chekcout Experience</h6>
+                <p class="mt-0 pt-0 small"><em>- OTP:123456</em></p>
+                <table class="mx-5 my-0">
+                    <tbody>
+                        <tr>
+                            <td>
+                                <p class="text-end m-2 small text-right">VISA</p>
+                            </td>
+                            <td>
+                                <div class="card bg-light border-0">
+                                    <div class="card-body text-center m-0 py-0 px-2 small">
+                                        4100000000005000
+                                    </div>
+                                </div>
+                            </td>
+
+                        </tr>
+                        <tr>
+                            <td>
+                                <p class="text-end m-2 small text-right">Mastercard</p>
+                            </td>
+                            <td>
+                                <div class="card bg-light border-0">
+                                    <div class="card-body text-center m-0 py-0 px-2 small">
+                                        5100000000005007
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h6 class="ml-0 mt-2">Failed Checkout Experience</h6>
+                <table class="mx-5 my-0">
+                    <tbody>
+                        <tr>
+                            <td>
+                                <p class="text-end m-2 small text-right">VISA</p>
+                            </td>
+                            <td>
+                                <div class="card bg-light border-0">
+                                    <div class="card-body text-center m-0 py-0 px-2 small">
+                                        4100000000300005
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p class="text-end m-2 small text-right">Mastercard</p>
+                            </td>
+                            <td>
+                                <div class="card bg-light border-0">
+                                    <div class="card-body text-center m-0 py-0 px-2 small">
+                                        5100000000300002
+                                    </div>
+                                </div>
+                            </td>
+
+                        </tr>
+                    </tbody>
+                </table>
+                <br>
+                <p class="text-italic">Hit refresh to checkout again.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock contentA %}

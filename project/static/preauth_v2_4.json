@@ -1,0 +1,371 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "3DS Merchant Interface",
+        "description": "3DS Merchant Interface",
+        "version": "2.4"
+    },
+    "servers": [
+        {
+            "url": "https://devlink.paydee.co/mpi",
+            "description": "MPI Proxy Server"
+        }
+    ],
+    "paths": {
+        "/mkReq": {
+            "post": {
+                "tags": [
+                    "Session Authentication"
+                ],
+                "summary": "Setup payment session and exchange RSA public keys",
+                "description": "A new pair of RSA keys is generated for each payment session. The public key is exchange in mkRey message.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/mkReq"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Returns MPI server's public key for this payment session.",
+                        "schema": {
+                            "$ref": "#/components/schemas/mkRes"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }  
+                }
+            }
+        },
+        "/mpReq": {
+            "post": {
+                "tags": [
+                    "3DS transaction"
+                ],
+                "summary": "Purchase request",
+                "description": "This function is used by the front-end checkout page to submit SALES request.",
+                "requestBody": {
+                    "required": [
+                        "transType",
+                        "purchaseId"
+                    ],
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/mpReq"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The result"                     
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }                  
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "mkReq": {
+                "type": "object",
+                "properties": {
+                    "merchantId": {
+                        "type": "string",
+                        "format": "number",
+                        "example": "000000000000051"
+                    },
+                    "purchaseId": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "txid20211013113647"
+                    },
+                    "pubKey": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsRbB7fk244VrlP-D1RhGc8TiwnSw6l4Nxx_sFOmPvWpwXpqEvbiYhOtXybYAHgcEAGvDyCfZF28ZfJoTwD2XiTjNU0zsAz2ofxMgc4qm1QMAZOaDghuOOsw1MjGKmBRaO74725SzMMQjxOjUfzl9Tgp2RRsgIc-vnJHtlFKAriwHlJxznoAid1A4JrZb6L-sp96fIu0_J-1N2cJi_BeuiBknLbYVRNZ5iuGUjwflt20jKNiG8H_lS-bKLPPHBTgHoGrqHvQVKvtfSWJGokcmtlR-uSYzRy0oLP-NPaat7RZ071x7bgv7he_E7X--TDhIECRhzgBBLgzVsGdrC37IwQIDAQAB"
+                    }
+                }
+            },
+            "mkRes": {
+                "type": "object",
+                "properties": {
+                    "merchantId": {
+                        "type": "string",
+                        "format": "number",
+                        "example": "123456789012345"
+                    },
+                    "purchaseId": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "A1.01.1.I01"
+                    },
+                    "pubKey": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7z9jDRmbXz-9kletycfjYcEgidXQSvBvqal9Nf2_Kzu4ANR4ZiYzziaF6ZKKBQHQacy5UQnMtR5jcQAI6hQsRsWGuGY_ylCBGyI9ENYI2hyKXmbwLihkj0bhSbO9_oa808ub8CIpVAPJx4Q8O3wNd8nZ1oU7YaiIArIdehCsqcKYGjfW6YL2dWJ1hflKnXAsMz6pFx8fJXhVQ7-hFC4pxJNAZ05zfC-rYSWtG_UO92pxscXSrWkW8KX3BttqkYHhsuCIYnq-X6ssKL0pi7Ft2HImNOviGWkm-IftzfX2-N3w3kiQ810Ay0w6vq5tdixA6DbgSxbfZ_L0rQoQY1QiIQIDAQAB"
+                    },
+                    "errorCode": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "000"
+                    },
+                    "errorDesc": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "Invalid Merchant ID"
+                    }
+                }
+            },
+            "mpReq": {
+                "type": "object",
+                "properties": {
+                    "MPI_TRANS_TYPE": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "SALES"
+                    },
+                    "MPI_MERC_ID": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "000000000000051"
+                    },
+                    "MPI_PAN": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "5100000000000107"
+                    },
+                    "MPI_PAN_EXP": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "2508"
+                    },
+                    "MPI_CVV2": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "123"
+                    },
+                    "MPI_CARD_HOLDER_NAME": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "TestUser"
+                    },
+                    "MPI_PURCH_AMT": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "100"
+                    },
+                    "MPI_PURCH_CURR": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "458"
+                    },
+                    "MPI_TRXN_ID": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "txid20211013113647"
+                    },
+                    "MPI_ORI_TRXN_ID": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_PURCH_DATE": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "20211013113647"
+                    },
+                    "MPI_ADDR_MATCH": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "N"
+                    },
+                    "MPI_BILL_ADDR_CITY": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_BILL_ADDR_STATE": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_BILL_ADDR_CNTRY": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_BILL_ADDR_POSTCODE": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_BILL_ADDR_LINE1": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_BILL_ADDR_LINE2": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_BILL_ADDR_LINE3": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_SHIP_ADDR_CITY": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_SHIP_ADDR_STATE": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_SHIP_ADDR_CNTRY": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_SHIP_ADDR_POSTCODE": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_SHIP_ADDR_LINE1": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_SHIP_ADDR_LINE2": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_SHIP_ADDR_LINE3": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_EMAIL": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_HOME_PHONE": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_HOME_PHONE_CC": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_WORK_PHONE": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_WORK_PHONE_CC": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_MOBILE_PHONE": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_MOBILE_PHONE_CC": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_RESPONSE_TYPE": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_ADDITIONAL_INFO_IND": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_RECURRING_FREQUENCY": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_RECURRING_EXPIRY": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_PURCHASE_INSTAL_DATA": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_RECURRING_MAX_PURCHASE_AMOUNT": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_RECURRING_TOTAL_PURCHASE_AMOUNT": {
+                        "type": "string",
+                        "format": "string",
+                        "example": ""
+                    },
+                    "MPI_MAC": {
+                        "type": "string",
+                        "format": "string",
+                        "example": "TpXa24zRIXtusg54gG320qpX5TPTmng8LIKNN-e6K8c3qP5pD_DplpGTqqQrH5YVRLLh5jbN6UNU8uD6fwbEzdmL9UPowudXr9UIHhwaCP4Fl8i0n1ZwoWWtXN5D-gC-J0UuOflaQltzaN08ZCgnSOMdWo7Eudy92VwHo9k_XTR7DaDxxg1igLd_0UNjHt0DOtzx7-ypA3AxEQF4YFB63ylEKj4gLzpi_6B2dDqHw4n4HAZCaHpfkeqZiAUTdkou6K-6TAcidqRfuxvTvCc6Xz7mERUoRRhRB5NG3QZzdLqvXW760CzmtgK-bzCRXT_N1L0Qymjkgq167efvtHfibw"
+                    }
+                }
+            },
+            "mpRes": {
+                "type": "object",
+                "properties": {
+                    "MPI_MERC_ID": {
+                        "type": "string",
+                        "format": "string"
+                    },
+                    "MPI_TRXN_ID": {
+                        "type": "string",
+                        "format": "string"
+                    }
+                }
+            }
+        }
+    }
+}

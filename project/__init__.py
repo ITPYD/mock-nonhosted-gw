@@ -26,7 +26,7 @@ app.config['KEY_PATH'] = "./project/static/data/key"
 #app.config['KEY_PATH'] = "D:\dev\paydee.devop\mpidevbox\project\static\data\key"
 #app.config['MPI_URL'] = "https://mpijumpbox.herokuapp.com/mpi"
 #app.config['MPI_URL'] = "https://mpidevbox.herokuapp.com/mpi"
-app.config['MPI_URL'] = "https://devlink.paydee.co/mpi"
+app.config['MPI_URL'] = "https://devlink2.paydee.co/mpi"
 #app.config['MPI_URL'] = "https://link.paydee.co/mpi"
 
 app.config['MERCHANT_ID'] = "000000000000033"
@@ -69,4 +69,4 @@ login_manager = LoginManager(app)
 mail = Mail(app)
 czws = CZWebService(base_url=app.config['CZ_WEBSERVICE_URL'])
 
-from project import routes
+from project import routes, routes_mock

@@ -10,7 +10,7 @@ from project.key import Key
 
 
 @app.route('/', methods=['GET', 'POST'])
-def index():
+def home():
     return render_template('test.html')
 
 

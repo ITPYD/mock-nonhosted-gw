@@ -1,7 +1,8 @@
 import requests, os, random
-from project import app, czws, db, bcrypt
+from project import app
 from datetime import date, time, datetime, timedelta
-from flask import current_app, render_template, redirect, url_for, flash, request, send_file, send_from_directory, safe_join, abort, Response
+from flask import current_app, render_template, redirect, url_for, flash, request, send_file, send_from_directory, abort, Response
+
 
 import project.routes
 from project.mpi import MPI
@@ -20,7 +21,7 @@ from project.key import Key
 #------------------------
 
 @app.route('/test/mkReq', methods=['GET', 'POST'])
-def testmkreq():
+def test_mkreq():
 
     print("-----test: mkreq---------")
 
@@ -93,7 +94,7 @@ def test_mpreq():
     return Response(result, status=200)
 
 @app.route('/test/mercReq', methods=['GET', 'POST'])
-def mock_mercreq():
+def test_mercreq():
     url = app.config["MPI_URL"] + "/mercReq"
     #url="http://localhost:5000/mpi_status"
     print(url)    

@@ -1,14 +1,12 @@
 import requests, os, random
-from project import app, czws, db, bcrypt, mail
+from project import app, mail
 from datetime import date, time, datetime, timedelta
-from flask import current_app, render_template, redirect, url_for, flash, request, send_file, send_from_directory, safe_join, abort, Response
-from flask_login import login_user, logout_user, current_user, login_required
+from flask import current_app, render_template, redirect, url_for, flash, request, send_file, send_from_directory,  abort, Response
 from flask_mail import Message
-from project.forms import LoginForm, RegistrationForm, MpiForm, RedirectUrlProxyForm, LiveEnvForm, MacValidateForm, ChangePasswordForm, ForgotPasswordForm
-from project.models import User, RedirectUrlProxy, LiveEnv, MacValidateModel
+from project.forms import MpiForm
 from project.mpi import MPI
 from project.key import Key
-from project.CZWebService import CZWebService
+
 
 
 @app.route('/', methods=['GET'])
@@ -274,104 +272,41 @@ def update_redirection_url():
 # Proxy functions
 #------------------------
 
-@app.route('/mpi/mkReq', methods=['GET', 'POST'])
-def proxy_mkreq():
-
-#    result="OK"
-#    return Response(result, status=200)
-
-    url = app.config["MPI_URL"] + "/mkReq"
-    r=""
-
-    print("---header---")
+def _proxy_request(path, content_type):
+    """Helper function to proxy requests to the MPI_URL."""
+    url = app.config["MPI_URL"] + path
+    print(f"Proxying request to: {url}")
+    print("--- Request Headers ---")
     print(request.headers)
 
-    # Need to overwrite the headers
-    headers = { 
-        'Content-Type' : 'application/json'
-    }
+    # Determine data source based on content type
+    request_data = request.data if 'json' in content_type else request.form
+    print("--- Request Data ---")
+    print(request_data)
 
-    print("------data------")
-    print(request.data)
-
+    headers = {'Content-Type': content_type}
+    
     try:
-        r = requests.post(url, headers = headers, data = request.data, verify=False)
-        result=f"{r.status_code} {r.content}"
-        print("------result------")
-        print(result)
+        r = requests.post(url, headers=headers, data=request_data, verify=False)
+        print(f"--- Response: {r.status_code} ---")
+        print(r.content)
         return Response(r.content, status=r.status_code)
-
     except Exception as e:
         error = str(e)
-        result=error
-        print("------result------")
-        print(result)
+        print(f"--- Proxy Error --- \n{error}")
+        return Response(error, status=500)
 
-    return Response(result, status=200)
+@app.route('/mpi/mkReq', methods=['GET', 'POST'])
+def proxy_mkreq():
+    return _proxy_request("/mkReq", 'application/json')
 
 @app.route('/mpi/mpReq', methods=['GET', 'POST'])
 def proxy_mpreq():
-    url = app.config["MPI_URL"] + "/mpReq"
-    #url="http://localhost:5000/mpi_status"
-    r=""
-
-    print("---header---")
-    print(request.headers)
-
-    print("------data------")
-    print(request.form)
-
-    # Need to overwrite the headers
-    headers = { 
-        'Content-Type' : 'application/x-www-form-urlencoded'
-    }
-
-    try:
-        r = requests.post(url, headers = headers, data = request.form, verify=False)
-        result=f"{r.status_code} {r.content}"
-        print("------result------")
-        print(result)
-        return Response(r.content, status=r.status_code)
-
-    except Exception as e:
-        error = str(e)
-        result=error
-        print("------result------")
-        print(result)
-
-    return Response(result, status=200)
+    return _proxy_request("/mpReq", 'application/x-www-form-urlencoded')
 
 @app.route('/mpi/mercReq', methods=['GET', 'POST'])
 def proxy_mercreq():
-    url = app.config["MPI_URL"] + "/mercReq"
-    #url="http://localhost:5000/mpi_status"
-    r=""
-
-    print("---header---")
-    print(request.headers)
-
-    print("------data------")
-    print(request.form)
-
-    # Need to overwrite the headers
-    headers = { 
-        'Content-Type' : 'application/x-www-form-urlencoded'
-    }
-
-    try:
-        r = requests.post(url, headers = headers, data = request.form, verify=False)
-        result=f"{r.status_code} {r.content}"
-        print("------result------")
-        print(result)
-        return Response(r.content, status=r.status_code)
-
-    except Exception as e:
-        error = str(e)
-        result=error
-        print("------result------")
-        print(result)
-
-    return Response(result, status=200)
+    return _proxy_request("/mercReq", 'application/x-www-form-urlencoded')
 
 @app.route('/proxy/mpi_status', methods=['POST'])
 def proxy_mpi_status():
@@ -674,27 +609,7 @@ def mac_validate():
 # WEB SERVICES
 #------------------------
 
-@app.route('/merchant_update_url', methods=['POST', 'GET'])
-def ws_merchant_update_url(mid, threed_url, status_url=""):
-  
-    
-    res = czws.merchant_update_url(mid=mid, threed_url=threed_url, status_url=status_url)
-    return res
 
-@app.route('/ws_login', methods=['POST', 'GET'])
-def ws_login():
-    #ws = CZWebService(base_url="https://33faa306-47f0-412d-8d72-22e7aadfda6b.mock.pstmn.io")
-    #ws = CZWebService()
-    #res = ws.login()
-    #res = czws.login()
-    threed_url = "https://mpidevbox-do7t.onrender.com/proxy/mpi_redirect"
-    status_url = "https://mpidevbox-do7t.onrender.com/proxy/mpi_status"
-    threed_url = "https://mpidevbox-do7t.onrender.com/proxy/threed_url"
-    status_url = "https://mpidevbox-do7t.onrender.com/proxy/status_url"    
-    res = czws.merchant_update_url(mid="000000000000051", threed_url=threed_url, status_url=status_url)
-    print(res)
-    #res = czws.merchant_inq(mid="000000000000033")
-    return res
 
 #------------------------
 # PING

@@ -3,28 +3,6 @@ from wtforms import StringField, PasswordField, SubmitField, SelectField, DateTi
 from wtforms.validators import DataRequired, Length, EqualTo, Email, NumberRange
 from project import app
 
-class RegistrationForm(FlaskForm):
-    organization = StringField(label = "Organization")
-    mid = StringField(label = "Merchant ID")
-    username = StringField(label = 'Username', validators = [DataRequired(), Length(min=3, max=20)])
-    email = StringField(label = 'Email', validators = [DataRequired(), Email()])
-    password = PasswordField(label = 'Password', validators = [DataRequired(), Length(min=6, max=16)])
-    confirm_password = PasswordField(label = 'Confirm Password', validators = [DataRequired(), EqualTo('password')])
-    submit = SubmitField(label = 'Create')
-    
-class ChangePasswordForm(FlaskForm):
-    password = PasswordField(label = 'Password', validators = [DataRequired(), Length(min=6, max=16)])
-    confirm_password = PasswordField(label = 'Confirm Password', validators = [DataRequired(), EqualTo('password')])
-    submit = SubmitField(label = 'Reset My Password')
-
-class ForgotPasswordForm(FlaskForm):
-    email = StringField(label = 'Please enter your registered email address. Our team will email you the instruction to reset instruction.', validators = [DataRequired(), Email()])
-    submit = SubmitField(label = 'Reset')
-
-class LoginForm(FlaskForm):
-    email = StringField(label = 'Email', validators = [DataRequired(), Email()])
-    password = PasswordField(label = 'Password', validators = [DataRequired(), Length(min=6, max=16)])
-    submit = SubmitField(label = 'Login')
 
 class MpiForm(FlaskForm):
     MPI_TRANS_TYPE = SelectField(label = "Select Transaction Type", 
@@ -186,24 +164,8 @@ class MpiForm(FlaskForm):
                 elif array[0] == 'MPI_RECURR_MAX_TOTAL':
                     self.MPI_RECURR_MAX_TOTAL.data = array[1]
 
-class RedirectUrlProxyForm(FlaskForm):
-    key = StringField(label = "Key - Transaction ID Prefix (2 characters)")
-    mid = StringField(label = "Merchant ID")
-    url = StringField(label = "Redirection URL")
-    status_url = StringField(label = "Status URL")
-    enable = SelectField(label = "Indicator (Y-enable/N-disable)", 
-        choices = [('Y'),('N')])
-    add = SubmitField(label = 'Add New Redirection URL')        
+
  
-class LiveEnvForm(FlaskForm):
-     mid = StringField(label = "Production MID", render_kw={"placeholder": "Production MID", 'readonly': True})
-     mProxyKey = StringField(label = "Proxy Key", render_kw={"placeholder": "TXID Prefix (2 chars)"})
-     #url = StringField(label = "Redirection URL", render_kw={"placeholder": "Event Webhook", "cols" : 33})
-     url = StringField(label = "Redirection URL", validators = [DataRequired()])
-     #status_url = StringField(label = "Status Webhook", render_kw={"placeholder": "Status Webhook", "cols" : 33})
-     status_url = StringField(label = "Status Webhook")
-     rsa_key = FileField(label = "RSA Key (one time setup):", render_kw={"placeholder": "RSA Key (one time setup)", "type" : "file"})
-     submit = SubmitField(label = "Update")
  
 class MacValidateForm(FlaskForm): 
 

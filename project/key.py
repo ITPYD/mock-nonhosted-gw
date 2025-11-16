@@ -10,7 +10,7 @@ from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 import json
 import base64
-from project import app, db
+from project import app
 
 class Key:
     public_key_path = app.config['KEY_PATH'] + "/public.key"

@@ -1,7 +1,8 @@
 import requests, os, random
-from project import app, czws, db, bcrypt
+from project import app
 from datetime import date, time, datetime, timedelta
-from flask import current_app, render_template, redirect, url_for, flash, request, send_file, send_from_directory, safe_join, abort, Response
+from flask import current_app, render_template, redirect, url_for, flash, request, send_file, send_from_directory, abort, Response
+from werkzeug.utils import safe_join
 
 import project.routes
 from project.mpi import MPI
@@ -19,108 +20,34 @@ from project.key import Key
 # Proxy functions
 #------------------------
 
-@app.route('/mock/mkReq', methods=['GET', 'POST'])
-def mock_mkreq():
-
-    print("-----mock: mkreq---------")
-
-#    result="OK"
-#    return Response(result, status=200)
-
-    url = app.config["MPI_URL"] + "/mkReq"
-    print(url)
-    r=""
-
-    print("---header---")
-    print(request.headers)
-
-    # Need to overwrite the headers
-    headers = { 
-        'Content-Type' : 'application/json'
-    }
-
-    print("------data------")
-    print(request.data)
-
+def _proxy_request(path, content_type, prefix=""):
+    """Helper function to proxy requests to the MPI_URL."""
+    url = app.config["MPI_URL"] + path
+    print(f"-----{prefix}: {path[1:]}---------")
+    print(f"Proxying request to: {url}")
+    
+    request_data = request.data if 'json' in content_type else request.form
+    headers = {'Content-Type': content_type}
 
     try:
-        r = requests.post(url, headers = headers, data = request.data, verify=False)
-        result=f"{r.status_code} {r.content}"
-        print("------result------")
-        print(result)
+        # Note: verify=False is a security risk. Use verify=True in production.
+        r = requests.post(url, headers=headers, data=request_data, verify=False)
+        print(f"--- Response: {r.status_code} ---")
+        print(r.content)
         return Response(r.content, status=r.status_code)
-
     except Exception as e:
         error = str(e)
-        result=error
-        print("------result------")
-        print(result)
-
-    return Response(result, status=200)
+        print(f"--- Proxy Error --- \n{error}")
+        return Response(error, status=500)
 
 @app.route('/mock/mpReq', methods=['GET', 'POST'])
 def mock_mpreq():
-    url = app.config["MPI_URL"] + "/mpReq"
-    #url="http://localhost:5000/mpi_status"
-    print(url)
-
-    r=""
-
-    print("---header---")
-    print(request.headers)
-
-    print("------data------")
-    print(request.form)
-
-    # Need to overwrite the headers
-    headers = { 
-        'Content-Type' : 'application/x-www-form-urlencoded'
-    }
-
-    try:
-        r = requests.post(url, headers = headers, data = request.form, verify=False)
-        result=f"{r.status_code} {r.content}"
-        print("------result------")
-        print(result)
-        return Response(r.content, status=r.status_code)
-
-    except Exception as e:
-        error = str(e)
-        result=error
-        print("------result------")
-        print(result)
-
-    return Response(result, status=200)
+    return _proxy_request("/mpReq", 'application/x-www-form-urlencoded', prefix="mock")
 
 @app.route('/mock/mercReq', methods=['GET', 'POST'])
 def mock_mercreq():
-    url = app.config["MPI_URL"] + "/mercReq"
-    #url="http://localhost:5000/mpi_status"
-    print(url)    
-    r=""
+    return _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
 
-    print("---header---")
-    print(request.headers)
-
-    print("------data------")
-    print(request.form)
-
-    # Need to overwrite the headers
-    headers = { 
-        'Content-Type' : 'application/x-www-form-urlencoded'
-    }
-
-    try:
-        r = requests.post(url, headers = headers, data = request.form, verify=False)
-        result=f"{r.status_code} {r.content}"
-        print("------result------")
-        print(result)
-        return Response(r.content, status=r.status_code)
-
-    except Exception as e:
-        error = str(e)
-        result=error
-        print("------result------")
-        print(result)
-
-    return Response(result, status=200)
+@app.route('/mock/mkReq', methods=['GET', 'POST'])
+def mock_mkreq():
+    return _proxy_request("/mkReq", 'application/json', prefix="mock")

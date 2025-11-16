@@ -69,4 +69,4 @@ login_manager = LoginManager(app)
 mail = Mail(app)
 czws = CZWebService(base_url=app.config['CZ_WEBSERVICE_URL'])
 
-from project import routes, routes_mock
+from project import routes, routes_mock, routes_test

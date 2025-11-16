@@ -18,7 +18,9 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['KEY_PATH'] = "./project/static/data/key"
 #app.config['KEY_PATH'] = "D:\dev\paydee.devop\mpidevbox\project\static\data\key"
-app.config['MPI_URL'] = os.environ.get('MPI_URL', 'https://devlink2.paydee.co/mpi')
+
+#app.config['MPI_URL'] = os.environ.get('MPI_URL', 'https://devlink2.paydee.co/mpi')
+app.config['MPI_URL'] = 'https://pag-v3.onrender.com/'
 
 app.config['MERCHANT_ID'] = os.environ.get('MERCHANT_ID', '000000000000033')
 app.config['UPLOAD_FOLDER'] = "static/data/upload"
@@ -38,4 +40,4 @@ app.config['MAIL_DEBUG'] = os.environ.get('MAIL_DEBUG', 'true').lower() in ('tru
 
 mail = Mail(app)
 
-from project import routes, routes_mock, routes_test
+from project import routes, routes_mock, routes_test, models

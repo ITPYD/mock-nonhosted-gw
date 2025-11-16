@@ -1,7 +1,7 @@
 import requests, os, random
 from project import app, mail
 from datetime import date, time, datetime, timedelta
-from flask import current_app, render_template, redirect, url_for, flash, request, send_file, send_from_directory,  abort, Response
+from flask import current_app, render_template, redirect, url_for, flash, request, send_file, send_from_directory,  abort, Response, session
 from flask_mail import Message
 from project.forms import MpiForm
 from project.mpi import MPI
@@ -9,9 +9,8 @@ from project.key import Key
 
 
 
-@app.route('/', methods=['GET'])
-def home():
-    return render_template('test.html')
+
+
 # ---------------------
 # MPI Function
 # ---------------------    
@@ -179,6 +178,7 @@ def mpi_redirect():
 # Proxy Helper functions
 #------------------------
 
+'''
 @app.route('/redirect_proxy')
 def redirect_proxy():
 
@@ -265,7 +265,7 @@ def update_redirection_url():
         
 
     return redirect("/home")
-
+'''
 
 
 #------------------------
@@ -425,6 +425,7 @@ def proxy_mpi_redirect():
         referral_code = referral_code,
         eci = eci, challenge_mandated_ind = challenge_mandated_ind, challenge_ind = challenge_ind,
         status_reason = status_reason, status_reason_desc = status_reason_desc,
+        #user=get_username(), is_admin=is_admin()
         user = get_username(), is_admin=is_admin()
         )
 
@@ -435,13 +436,13 @@ def proxy_mpi_redirect():
 @app.route("/mac/upload_public_rsa", methods=['POST', 'GET'])
 def upload_public_rsa():
     
-    u = current_user.get_id()
-    if u == None:
-        u = 999999
-    print(f'u = {u}')
+    #u = current_user.get_id()
+    #if u == None:
+    #    u = 999999
+    #print(f'u = {u}')
 
     print(request.files)
-    myfile = request.files["public_rsa"]
+    '''myfile = request.files["public_rsa"]
     if myfile.filename != "":                
         key = myfile.read()
         print(f"== key: {key}" )
@@ -461,17 +462,18 @@ def upload_public_rsa():
             db.session.commit()
 
     #flash(f'OK', category='success')
-    return devbox_macvalidation(id="mac-validation")
+    return devbox_macvalidation(id="mac-validation")'''
+    return "OK"
 
 @app.route('/mac/upload_private_rsa', methods=['POST', 'GET'])
 def upload_private_rsa():
 
-    u = current_user.get_id()
-    if u == None:
-        u = 999999
-    print(f'u = {u}')
+    #u = current_user.get_id()
+    #if u == None:
+    #    u = 999999
+    #print(f'u = {u}')
 
-    myfile = request.files["private_rsa"]
+    '''myfile = request.files["private_rsa"]
     if myfile.filename != "":                
         key = myfile.read()
         print(f"== key: {key}" )
@@ -496,16 +498,17 @@ def upload_private_rsa():
             db.session.commit()
 
     #flash(f'OK', category='success')
-    return redirect(url_for("devbox_macvalidation", id="mac-validation"))
+    return redirect(url_for("devbox_macvalidation", id="mac-validation"))'''
+    return "OK"
 
 @app.route('/mac/generate_rsa', methods=['POST', 'GET'])
 def generate_rsa():
 
-    u = current_user.get_id()
-    if u == None:
-        u = 999999
+    #u = current_user.get_id()
+    #if u == None:
+    #    u = 999999
 
-    key = Key(u, u)
+    '''key = Key(u, u)
     key.GenKeys(save=False)
 
     mac_validate = MacValidateModel.query.filter_by(user=u).first()
@@ -528,16 +531,17 @@ def generate_rsa():
         db.session.add(mac_validate)
         db.session.commit()
 
-    return redirect(url_for("devbox_macvalidation", id="mac-validation"))
+    return redirect(url_for("devbox_macvalidation", id="mac-validation"))'''
+    return "OK"
 
 @app.route('/mac/validate', methods=['POST', 'GET'])
 def mac_validate():
 
-    u = current_user.get_id()
-    if u == None:
-        u = 999999
+    #u = current_user.get_id()
+    #if u == None:
+    #    u = 999999
 
-    print(request.form)
+    '''print(request.form)
     # ImmutableMultiDict([('data', ''), ('mac', 'test'), ('sign_mac', 'Generate MAC Signature')])
     result = "Not Verified"
     data = request.form.get("data", "")
@@ -603,7 +607,8 @@ def mac_validate():
     #print(f"RESULT:{result}")
     redirect(url_for("devbox_macvalidation", id="mac-signature"))
     return render_template('api-mac-validation.html', scrollToAnchor='mac-signature', 
-    result=result, form=form, public=public, private=private, user = get_username(), is_admin=is_admin())
+    result=result, form=form, public=public, private=private, user = get_username(), is_admin=is_admin())'''
+    return "OK"
 
 #------------------------
 # WEB SERVICES

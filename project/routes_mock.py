@@ -155,6 +155,9 @@ def mock_mareq():
 # CORE PROXY FUNCTION (Finalized with all URL replacements)
 #------------------------
 
+
+
+
 @app.route('/mock/3ds/<path:subpath>', methods=['GET', 'POST'])
 def mock_3ds_proxy(subpath):
     """Proxies 3DS content (callback/mon) to overcome CORS issues."""
@@ -181,7 +184,7 @@ def mock_3ds_proxy(subpath):
             print(f"--- 3DS PROXY PATCH APPLIED: {subpath} ---")
             
             # FIX 2: Replace the content byte string
-            #response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
+            response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
         
         # === END: CROSS-ORIGIN FIX (3DS) ===
 

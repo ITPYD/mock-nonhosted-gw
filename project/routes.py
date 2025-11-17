@@ -8,12 +8,9 @@ from project.mpi import MPI
 from project.key import Key
 
 
-
 @app.route('/', methods=['GET', 'POST'])
 def home():
     return render_template('test.html')
-
-
 
 # ---------------------
 # MPI Function

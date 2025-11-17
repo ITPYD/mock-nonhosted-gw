@@ -134,32 +134,51 @@ def mock_card_req():
 
 # In your routes_mock.py
 
-@app.route('/mock/3ds/<path:subpath>', methods=['GET', 'POST'])
-def mock_3ds_proxy(subpath):
-    """Proxies 3DS content (callback/mon) to overcome CORS issues."""
-    
-    # 1. Reconstruct the remote URL using the *new* 3DS domain
-    # You may need to add this new base URL to your app.config
-    base_3ds_url = 'https://paydee-test.as1.gpayments.net'
-    
-    # subpath will contain the full path: api/v2/brw/callback?...
-    remote_url = f"{base_3ds_url}/{subpath}"
-    
-    print(f"--- 3DS PROXY: Fetching {remote_url} ---")
-    
-    # ... (Reuse your existing fetch and response logic here) ...
-    try:
-        if request.method == 'POST':
-            resp = requests.post(remote_url, data=request.data, verify=True, timeout=30)
-        else:
-            # Pass query string params from the local request to the remote request
-            resp = requests.get(remote_url, params=request.args, verify=True, timeout=30) 
+#------------------------
+# CORE PROXY FUNCTION (Finalized with all URL replacements)
+#------------------------
 
-        # We must return the exact content and headers
-        return resp.content, resp.status_code, {'Content-Type': resp.headers['Content-Type']}
+def _proxy_request(path, content_type, prefix=""):
+    """Helper function to proxy requests (POST/GET) to the MPI_URL, with CORS/3DS patching."""
+    url = app.config["MPI_URL"] + path
+    # ... (omitting request headers/data and method logic) ...
+
+    try:
+        # 1. Execute the request to the remote server
+        if method == 'POST':
+            r = requests.post(url, headers=headers, data=request_data, verify=False, timeout=30)
+        else:
+            r = requests.get(url, headers=headers, params=request.args, verify=False, timeout=30) # Use request.args for GET params
+            
+        response_content = r.content
+
+        # === START: CROSS-ORIGIN FIX (3DS) - APPLIED TO ALL PROXIED CONTENT ===
+        
+        # This domain appears in iframes, form actions, and AJAX URLs within the proxied content.
+        REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
+        
+        # We replace it with the path that maps to your @app.route('/mock/3ds/<path:subpath>')
+        LOCAL_3DS_PREFIX = b'/mock/3ds'
+        
+        # Check if the response content contains the 3DS domain (it's often HTML)
+        if REMOTE_3DS_PREFIX in response_content:
+            print(f"--- CROSS-ORIGIN PATCH APPLIED (Replacing {REMOTE_3DS_PREFIX.decode()} with {LOCAL_3DS_PREFIX.decode()}) ---")
+            
+            # Perform a byte-level replacement
+            response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
+        
+        # === END: CROSS-ORIGIN FIX (3DS) ===
+
+        print(f"--- Response: {r.status_code} ---")
+        
+        # Return the modified content with the original status and content-type
+        return Response(response_content, status=r.status_code, headers=r.headers) 
         
     except Exception as e:
-        return f"Error proxying 3DS: {e}", 500
+        # ... (error handling logic) ...
+        error = str(e)
+        print(f"--- Proxy Error --- \n{error}")
+        return Response(error, status=500)
 
 @app.route('/mpi/resources/<path:filename>', methods=['GET', 'POST'])
 @app.route('/mock/resources/<path:filename>', methods=['GET', 'POST'])

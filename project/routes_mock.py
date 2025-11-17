@@ -70,14 +70,13 @@ def _proxy_request(path, content_type, prefix=""):
         # ===================================
 
         # WEBHOOK
-        DEFAULT_WEBHOOK = 'https://merchant.domain/merchant_webhook_url'
-        LOCAL_WEBHOOK = 'https://devlinkv2.paydee.co/mpigw/payment/status'
-
+        DEFAULT_WEBHOOK = b'https://merchant.domain/merchant_webhook_url'
+        LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
 
         if DEFAULT_WEBHOOK in response_content:
-            print(f"--- DEFAULT WEBHOOK PATCH APPLIED: {subpath} ---")
+            print(f"--- DEFAULT WEBHOOK PATCH APPLIED ---")
             response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
-
+            
         print(f"--- Response: {r.status_code} ---")
         # print(response_content) # Print the modified content here for debugging
         
@@ -208,8 +207,8 @@ def mock_3ds_proxy(subpath):
         response_content = resp.content
         
 
-        print(f"--- 3DS PROXY RESPONSE CONTENT ({subpath}): {resp.content.decode('utf-8', errors='ignore')}")
-        print(f"--- 3DS PROXY: Response Status: {resp.status_code} ---")
+        #print(f"--- 3DS PROXY RESPONSE CONTENT ({subpath}): {resp.content.decode('utf-8', errors='ignore')}")
+        #print(f"--- 3DS PROXY: Response Status: {resp.status_code} ---")
 
         # 2. Apply the URL Patching (keeping this active as confirmed necessary)
         REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
@@ -232,12 +231,11 @@ def mock_3ds_proxy(subpath):
 
 
         # WEBHOOK
-        DEFAULT_WEBHOOK = 'https://merchant.domain/merchant_webhook_url'
-        LOCAL_WEBHOOK = 'https://devlinkv2.paydee.co/mpigw/payment/status'
-
+        DEFAULT_WEBHOOK = b'https://merchant.domain/merchant_webhook_url'
+        LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
 
         if DEFAULT_WEBHOOK in response_content:
-            print(f"--- DEFAULT WEBHOOK PATCH APPLIED: {subpath} ---")
+            print(f"--- DEFAULT WEBHOOK PATCH APPLIED ---")
             response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
 
         # 3. Return the patched content with all original response headers

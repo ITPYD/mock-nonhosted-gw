@@ -135,9 +135,97 @@ def _proxy_request(path, content_type, prefix=""):
 # MOCK ROUTES (API ENDPOINTS)
 #------------------------
 
+# (Your existing imports: from flask import Flask, jsonify, request, Response)
+# (Your existing imports: import requests, json)
+
+# --- NEW HELPER FUNCTION FOR CUSTOM PAYLOADS ---
+def _custom_proxy_request(path, data_payload, prefix=""):
+    """
+    Helper function to proxy requests (POST) with a SPECIFIC custom data payload.
+    This bypasses using the global request.form, which is necessary for multi-step processing.
+    """
+    url = app.config["MPI_URL"] + path
+    print(f"-----{prefix}: {path[1:]} (CUSTOM PAYLOAD)---------")
+    print(f"Proxying request to: {url}")
+    
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    
+    try:
+        # Use requests.post directly with the custom data payload
+        r = requests.post(url, headers=headers, data=data_payload, verify=False, timeout=30)
+            
+        response_content = r.content
+
+        # === START: CONTENT PATCHING (CRITICAL) ===
+        # The patching logic must be included here to handle redirects from the target server
+
+        # 1. 3DS Domain Patching (if applicable)
+        REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
+        LOCAL_3DS_PREFIX = b'/mock/3ds'
+        if REMOTE_3DS_PREFIX in response_content:
+            response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
+
+        # 2. MPI Domain Patching
+        REMOTE_MPI_DOMAIN = app.config["REMOTE_MPI_DOMAIN"].encode('utf-8')
+        LOCAL_ROOT_PATH = b'/'
+        if REMOTE_MPI_DOMAIN in response_content:
+             response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
+
+        # 3. Webhook Patching (The final redirect URL)
+        DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
+        LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
+        if DEFAULT_WEBHOOK in response_content:
+            response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
+        # === END: CONTENT PATCHING ===
+            
+        print(f"--- Response: {r.status_code} ---")
+        return Response(response_content, status=r.status_code)
+            
+    except Exception as e:
+        error = str(e)
+        print(f"--- Proxy Error --- \n{error}")
+        return Response(error, status=500)
+
+
+# --- UPDATED /mock/mpReq ROUTE ---
 @app.route('/mock/mpReq', methods=['GET', 'POST'])
 def mock_mpreq():
-    return _proxy_request("/mpReq", 'application/x-www-form-urlencoded', prefix="mock")
+    """
+    Handles the mock flow: 
+    1. Proxies mercReq (transaction registration) using original data.
+    2. Assumes success and constructs a new payload for fpx/init.
+    3. Proxies the fpx/init request using the custom payload and returns the final response.
+    """
+    
+    # 1. Capture the original request data before it's used by the first proxy call.
+    # This data contains critical fields like MPI_MERC_ID and MPI_EMAIL.
+    original_data = dict(request.form)
+    
+    # 2. First call: Proxy the transaction registration (mercReq)
+    # Note: We must call _proxy_request first to register the transaction and get a response.
+    # For simplicity, we assume mercReq is successful (HTTP 200) and proceed.
+    # The return value of the first call is ignored because we want to return the FPX initiation page.
+    _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
+
+    # 3. Construct the data payload for fpx/init
+    # This payload is for the second request, which initiates the bank selection screen.
+    fpx_data_payload = {
+        # Copied/Derived from the incoming request (mercReq)
+        "PAG_MERCHANT_ID": original_data.get('MPI_MERC_ID', '000000000000033'),
+        "PAG_CUST_EMAIL": original_data.get('MPI_EMAIL', 'test@example.com'),
+        
+        # New/Hardcoded/Selected data for FPX initiation
+        # Note: PAG_TRANS_ID should ideally be derived or newly generated to be unique.
+        "PAG_TRANS_ID": original_data.get('MPI_TRXN_ID', 'mdl_default_id'),
+        "PAG_CHANNEL_NAME": "Bank Muamalat", # Example bank selection
+        "PAG_ORDER_DETAIL": "PAG Merchant Order",
+        "PAG_MAC": "Some-Random-MAC-String-For-FPX", # Placeholder MAC for FPX
+    }
+    
+    # 4. Second call: FPX initiation (/fpx/init) using the custom payload
+    # This returns the final HTML to the client (usually the bank selection/redirect page).
+    return _custom_proxy_request("/fpx/init", fpx_data_payload, prefix="mock")
+
 
 @app.route('/mock/mercReq', methods=['GET', 'POST'])
 def mock_mercreq():
@@ -168,6 +256,41 @@ def mock_notify_req():
     """Handles the final form submission from the 3DS iFrame and proxies it."""
     # This request should be proxied back to the remote MPI server to complete the 3DS flow.
     return _proxy_request("/notifyReq", 'application/x-www-form-urlencoded', prefix="mock")
+
+from flask import Flask, jsonify, request, Response
+import json # You'll need this import if not already present
+
+# Assume 'app = Flask(__name__)' is already defined
+
+@app.route('/mock/channels', methods=['POST', 'GET'])
+def mock_channels():
+    """
+    Mocks the /channels endpoint, returning a list of available payment channels.
+    This simulates the response structure where a merchant fetches options.
+    """
+    print("-----mock: channels---------")
+    print("Returning mocked payment channels.")
+    
+    # --- Sample Data Structure (Adjust as needed) ---
+    # This structure is highly typical for payment method lists.
+    response_data = {
+        "MPI_ERROR_CODE": "000",
+        "MPI_ERROR_DESC": "SUCCESS",
+        "MPI_CHANNEL_LIST": [
+            {
+                "MPI_PAYMENT_METHOD": "FPX",
+                "MPI_PAYMENT_CHANNEL": ["PUBLIC_BANK=A", "ALRAJHI=A", "MAYBANK=B"]
+            }
+        ]
+    }
+    
+    # Return the data as a JSON response with status 200
+    return jsonify(response_data), 200
+
+# Optionally, you might want to call your existing proxy helper
+# to simulate how a real request would flow through your mock server
+# if the client expects a proxied response. 
+# If the client is calling /mock/channels directly, the jsonify method is better.
 
 #------------------------
 # STATIC RESOURCE PROXY (CRITICAL FIX FOR CSS/JS/IMAGES)

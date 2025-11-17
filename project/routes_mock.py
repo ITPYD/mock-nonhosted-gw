@@ -47,8 +47,8 @@ def _proxy_request(path, content_type, prefix=""):
             print(response_content.decode('utf-8', errors='ignore'))
             print("-----------------------------------------------")
 
-        if path == "/mpReq":
-            print("--- DEBUG: FULL CONTENT FOR /mpReq RESPONSE ---")
+        if path == "/mercReq":
+            print("--- DEBUG: FULL CONTENT FOR /mercReq RESPONSE ---")
             # Decode the content to print the URL string clearly
             print(response_content.decode('utf-8', errors='ignore'))
             print("-----------------------------------------------")

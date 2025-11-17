@@ -192,6 +192,10 @@ def mock_3ds_proxy(subpath):
                                 verify=True, timeout=30)
         response_content = resp.content
         
+
+        print(f"--- 3DS PROXY RESPONSE CONTENT ({subpath}): {resp.content.decode('utf-8', errors='ignore')}")
+        print(f"--- 3DS PROXY: Response Status: {resp.status_code} ---")
+
         # 2. Apply the URL Patching (keeping this active as confirmed necessary)
         REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
         LOCAL_3DS_PREFIX = b'/mock/3ds'

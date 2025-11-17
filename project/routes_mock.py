@@ -156,42 +156,53 @@ def mock_mareq():
 #------------------------
 
 
-
-
 @app.route('/mock/3ds/<path:subpath>', methods=['GET', 'POST'])
 def mock_3ds_proxy(subpath):
-    """Proxies 3DS content (callback/mon) to overcome CORS issues."""
+    """Proxies 3DS content (callback/mon) and patches URLs to bypass CORS."""
     
     base_3ds_url = 'https://paydee-test.as1.gpayments.net'
     remote_url = f"{base_3ds_url}/{subpath}"
     
     print(f"--- 3DS PROXY: Fetching {remote_url} ---")
+
+    # CRITICAL FIX: Extract essential headers from the browser's request
+    # We copy all headers except ones that might interfere with requests (like Host, Content-Length)
+    # The dictionary comprehension copies headers while excluding problematic ones.
+    proxied_headers = {
+        key: value 
+        for key, value in request.headers.items() 
+        if key.lower() not in ['host', 'content-length', 'connection']
+    }
     
     try:
+        # 1. Execute the request to the remote 3DS server
         if request.method == 'POST':
-            resp = requests.post(remote_url, data=request.data, verify=True, timeout=30)
+            resp = requests.post(remote_url, 
+                                 headers=proxied_headers,  # PASS THE HEADERS
+                                 data=request.data, 
+                                 verify=True, timeout=30)
         else:
-            resp = requests.get(remote_url, params=request.args, verify=True, timeout=30) 
+            resp = requests.get(remote_url, 
+                                headers=proxied_headers,  # PASS THE HEADERS
+                                params=request.args, 
+                                verify=True, timeout=30) 
 
         response_content = resp.content
         
-        # === START: CROSS-ORIGIN FIX (3DS) ===
+        # 2. Apply the URL Patching (keeping this active as confirmed necessary)
         REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
         LOCAL_3DS_PREFIX = b'/mock/3ds'
         
-        # FIX 1: Check the content, not the Response object itself
         if REMOTE_3DS_PREFIX in response_content:
             print(f"--- 3DS PROXY PATCH APPLIED: {subpath} ---")
-            
-            # FIX 2: Replace the content byte string
             response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
         
-        # === END: CROSS-ORIGIN FIX (3DS) ===
-
-        # Return the modified content with the original status and headers
+        # 3. Return the patched content with all original response headers
         return Response(response_content, status=resp.status_code, headers=resp.headers)
         
     except Exception as e:
+        error = str(e)
+        print(f"--- 3DS Proxy Error: {error} ---")
         return f"Error proxying 3DS: {e}", 500
 
 

@@ -47,6 +47,13 @@ def _proxy_request(path, content_type, prefix=""):
             print(response_content.decode('utf-8', errors='ignore'))
             print("-----------------------------------------------")
 
+        if path == "/mpReq":
+            print("--- DEBUG: FULL CONTENT FOR /mpReq RESPONSE ---")
+            # Decode the content to print the URL string clearly
+            print(response_content.decode('utf-8', errors='ignore'))
+            print("-----------------------------------------------")
+
+
         # === START: CROSS-ORIGIN FIX (3DS) ===
         # We only need to do this when the response is HTML and contains the specific 3DS domain.
         
@@ -208,8 +215,6 @@ def mock_mpreq():
     # The return value of the first call is ignored because we want to return the FPX initiation page.
     ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
 
-    print(f"--- NON-HOSTED  {ret.content.decode('utf-8', errors='ignore')}")
-    print(f"--- NON-HOSTED Response Status: {ret.status_code} ---")
 
     # 3. Construct the data payload for fpx/init
     # This payload is for the second request, which initiates the bank selection screen.

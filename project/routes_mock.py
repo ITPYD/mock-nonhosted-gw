@@ -208,7 +208,7 @@ def mock_mpreq():
     # The return value of the first call is ignored because we want to return the FPX initiation page.
     ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
 
-    print(f"--- NON-HOSTED ({subpath}): {ret.content.decode('utf-8', errors='ignore')}")
+    print(f"--- NON-HOSTED  {ret.content.decode('utf-8', errors='ignore')}")
     print(f"--- NON-HOSTED Response Status: {ret.status_code} ---")
 
     # 3. Construct the data payload for fpx/init

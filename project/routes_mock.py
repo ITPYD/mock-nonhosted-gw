@@ -77,6 +77,7 @@ def mock_card_req():
 # STATIC RESOURCE PROXY (CRITICAL FIX FOR CSS/JS/IMAGES)
 #------------------------
 
+@app.route('/mpi/resources/<path:filename>', methods=['GET', 'POST'])
 @app.route('/mock/resources/<path:filename>', methods=['GET', 'POST'])
 def mock_resource_proxy(filename):
     """Proxies requests for static assets (CSS, JS, Images) back to the remote server."""

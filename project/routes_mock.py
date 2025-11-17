@@ -92,8 +92,11 @@ def mock_resource_proxy(filename):
         if request.method == 'POST':
             resp = requests.post(remote_url, data=request.data, verify=True)
         else:
-            resp = requests.get(remote_url, verify=True)
+            resp = requests.get(remote_url, verify=True, timeout=30)
             
+        print(f"--- RESOURCE PROXY: Response Status: {resp.status_code} ---")
+        print(f"--- RESOURCE PROXY: Response Content-Type: {resp.headers.get('Content-Type')} ---")
+
         # Return the content directly, ensuring correct MIME type is passed
         return resp.content, resp.status_code, {'Content-Type': resp.headers['Content-Type']}
         

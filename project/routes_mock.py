@@ -33,9 +33,9 @@ def _proxy_request(path, content_type, prefix=""):
 
     try:
         if method == 'POST':
-            r = requests.post(url, headers=headers, data=request_data, verify=False)
+            r = requests.post(url, headers=headers, data=request_data, verify=False, timeout=30)
         else: # Default to GET for simplicity if not POST
-            r = requests.get(url, headers=headers, params=request_data, verify=False)
+            r = requests.get(url, headers=headers, params=request_data, verify=False, timeout=30)
 
         print(f"--- Response: {r.status_code} ---")
         print(r.content)

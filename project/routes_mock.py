@@ -77,7 +77,7 @@ def _proxy_request(path, content_type, prefix=""):
         # ===================================
 
         # WEBHOOK
-        DEFAULT_WEBHOOK = b'https://merchant.domain/merchant_webhook_url'
+        DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
         LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
 
         if DEFAULT_WEBHOOK in response_content:
@@ -240,7 +240,7 @@ def mock_3ds_proxy(subpath):
 
 
         # WEBHOOK
-        DEFAULT_WEBHOOK = b'https://merchant.domain/merchant_webhook_url'
+        DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
         LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
 
         if DEFAULT_WEBHOOK in response_content:
@@ -279,7 +279,7 @@ def mock_resource_proxy(filename):
 
         response_content = resp.content
         # WEBHOOK
-        DEFAULT_WEBHOOK = b'https://merchant.domain/merchant_webhook_url'
+        DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
         LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
 
         if DEFAULT_WEBHOOK in response_content:

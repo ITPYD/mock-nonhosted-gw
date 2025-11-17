@@ -206,7 +206,9 @@ def mock_mpreq():
     # Note: We must call _proxy_request first to register the transaction and get a response.
     # For simplicity, we assume mercReq is successful (HTTP 200) and proceed.
     # The return value of the first call is ignored because we want to return the FPX initiation page.
-    _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
+    ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
+
+    print(f"{ret}")
 
     # 3. Construct the data payload for fpx/init
     # This payload is for the second request, which initiates the bank selection screen.

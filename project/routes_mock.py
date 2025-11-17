@@ -14,7 +14,7 @@ from project.key import Key
 #------------------------
 def _proxy_request(path, content_type, prefix=""):
     """Helper function to proxy requests (POST/GET) to the MPI_URL."""
-    """Helper function to proxy requests (POST/GET) to the MPI_URL."""
+
     url = app.config["MPI_URL"] + path
     print(f"-----{prefix}: {path[1:]}---------")
     print(f"Proxying request to: {url}")
@@ -55,6 +55,19 @@ def _proxy_request(path, content_type, prefix=""):
         #    response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
         
         # === END: CROSS-ORIGIN FIX (3DS) ===
+
+        # ===================================
+
+        REMOTE_MPI_DOMAIN = app.config["REMOTE_MPI_DOMAIN"].encode('utf-8')
+        LOCAL_ROOT_PATH = b'/'
+
+        if REMOTE_MPI_DOMAIN in response_content:
+            print(f"--- FINAL REDIRECT PATCH APPLIED (Replacing {REMOTE_MPI_DOMAIN.decode()} with {LOCAL_ROOT_PATH.decode()}) ---")
+            # Replace the full remote MPI base URL with your local root path.
+            # This makes the final form submit to your application's root path or relative link.
+            response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
+
+        # ===================================
 
         print(f"--- Response: {r.status_code} ---")
         # print(response_content) # Print the modified content here for debugging
@@ -127,6 +140,11 @@ def mock_card_req():
     # This route intercepts the POST from the HTML form and proxies it to the remote API
     return _proxy_request("/cardReq", 'application/x-www-form-urlencoded', prefix="mock")
 
+@app.route('/mock/maReq', methods=['POST'])
+def mock_mareq():
+    """Handles the form submission action 'maReq' and proxies it to the remote MPI."""
+    # This request contains the final browser info and is a standard form submission.
+    return _proxy_request("/maReq", 'application/x-www-form-urlencoded', prefix="mock")
 
 #------------------------
 # STATIC RESOURCE PROXY (CRITICAL FIX FOR CSS/JS/IMAGES)

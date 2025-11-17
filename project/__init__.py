@@ -22,7 +22,7 @@ app.config['KEY_PATH'] = "./project/static/data/key"
 app.config['MPI_URL'] = os.environ.get('MPI_URL', 'https://devlink2.paydee.co/mpi')
 #app.config['MPI_URL'] = 'https://pag-v3.onrender.com/'
 
-app.config['REMOTE_MPI_DOMAIN'] = "https://devlink.paydee.co/
+app.config['REMOTE_MPI_DOMAIN'] = "https://devlink.paydee.co/mpi"
 
 app.config['MERCHANT_ID'] = os.environ.get('MERCHANT_ID', '000000000000033')
 app.config['UPLOAD_FOLDER'] = "static/data/upload"

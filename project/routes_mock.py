@@ -44,15 +44,15 @@ def _proxy_request(path, content_type, prefix=""):
         # We only need to do this when the response is HTML and contains the specific 3DS domain.
         
         # 1. Define the remote 3DS URL prefix to be replaced (e.g., the iframe source)
-        REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
+        #REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
         
         # 2. Define the local mock URL prefix
         # We use a path that maps to your new @app.route('/mock/3ds/<path:subpath>')
-        LOCAL_3DS_PREFIX = b'/mock/3ds'
+        #LOCAL_3DS_PREFIX = b'/mock/3ds'
         
-        if REMOTE_3DS_PREFIX in response_content:
-            print("--- CROSS-ORIGIN PATCH APPLIED ---")
-            response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
+        #if REMOTE_3DS_PREFIX in response_content:
+        #    print("--- CROSS-ORIGIN PATCH APPLIED ---")
+        #    response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
         
         # === END: CROSS-ORIGIN FIX (3DS) ===
 
@@ -138,6 +138,8 @@ def mock_card_req():
 #------------------------
 
 
+
+
 @app.route('/mock/3ds/<path:subpath>', methods=['GET', 'POST'])
 def mock_3ds_proxy(subpath):
     """Proxies 3DS content (callback/mon) to overcome CORS issues."""
@@ -164,7 +166,7 @@ def mock_3ds_proxy(subpath):
             print(f"--- 3DS PROXY PATCH APPLIED: {subpath} ---")
             
             # FIX 2: Replace the content byte string
-            response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
+            #response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
         
         # === END: CROSS-ORIGIN FIX (3DS) ===
 

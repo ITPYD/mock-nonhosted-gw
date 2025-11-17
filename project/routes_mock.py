@@ -146,6 +146,12 @@ def mock_mareq():
     # This request contains the final browser info and is a standard form submission.
     return _proxy_request("/maReq", 'application/x-www-form-urlencoded', prefix="mock")
 
+@app.route('/mock/notifyReq', methods=['POST'])
+def mock_notify_req():
+    """Handles the final form submission from the 3DS iFrame and proxies it."""
+    # This request should be proxied back to the remote MPI server to complete the 3DS flow.
+    return _proxy_request("/mpi/notifyReq", 'application/x-www-form-urlencoded', prefix="mock")
+
 #------------------------
 # STATIC RESOURCE PROXY (CRITICAL FIX FOR CSS/JS/IMAGES)
 #------------------------
@@ -200,10 +206,20 @@ def mock_3ds_proxy(subpath):
         REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
         LOCAL_3DS_PREFIX = b'/mock/3ds'
         
+
+        # NEW: The final MPI domain to be patched
+        REMOTE_MPI_DOMAIN = b'https://devlink.paydee.co/mpi/notifyReq'
+        LOCAL_NOTIFY_PATH = b'/mock/notifyReq' # Create this new route
+
         if REMOTE_3DS_PREFIX in response_content:
             print(f"--- 3DS PROXY PATCH APPLIED: {subpath} ---")
             response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
         
+        # CRITICAL NEW PATCHING STEP: Handle the final form action URL
+        if REMOTE_MPI_DOMAIN in response_content:
+            print(f"--- 3DS PROXY PATCH APPLIED (MPI domain): {subpath} ---")
+            response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_NOTIFY_PATH)
+
         # 3. Return the patched content with all original response headers
         return Response(response_content, status=resp.status_code, headers=resp.headers)
         

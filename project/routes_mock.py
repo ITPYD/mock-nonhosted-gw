@@ -83,7 +83,9 @@ def _proxy_request(path, content_type, prefix=""):
         if DEFAULT_WEBHOOK in response_content:
             print(f"--- DEFAULT WEBHOOK PATCH APPLIED ---")
             response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
-            
+
+
+
         print(f"--- Response: {r.status_code} ---")
         # print(response_content) # Print the modified content here for debugging
         
@@ -274,8 +276,18 @@ def mock_resource_proxy(filename):
         print(f"--- RESOURCE PROXY: Response Status: {resp.status_code} ---")
         print(f"--- RESOURCE PROXY: Response Content-Type: {resp.headers.get('Content-Type')} ---")
 
+
+        response_content = resp.content
+        # WEBHOOK
+        DEFAULT_WEBHOOK = b'https://merchant.domain/merchant_webhook_url'
+        LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
+
+        if DEFAULT_WEBHOOK in response_content:
+            print(f"--- DEFAULT WEBHOOK PATCH APPLIED ---")
+            response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
+
         # Return the content directly, ensuring correct MIME type is passed
-        return resp.content, resp.status_code, {'Content-Type': resp.headers['Content-Type']}
+        return response_content, resp.status_code, {'Content-Type': resp.headers['Content-Type']}
         
     except Exception as e:
         error = str(e)

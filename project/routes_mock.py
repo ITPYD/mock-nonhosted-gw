@@ -82,7 +82,7 @@ def mock_resource_proxy(filename):
     """Proxies requests for static assets (CSS, JS, Images) back to the remote server."""
     
     mpi_url = app.config['MPI_URL']
-    remote_path = f"/mpi/resources/{filename}"
+    remote_path = f"/resources/{filename}"
     remote_url = f"{mpi_url}{remote_path}"
     
     print(f"--- RESOURCE PROXY: Fetching {remote_url} ---")

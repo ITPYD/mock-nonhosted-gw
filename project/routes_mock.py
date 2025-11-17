@@ -12,8 +12,8 @@ from project.key import Key
 #------------------------
 # CORE PROXY FUNCTION
 #------------------------
-
-"""Helper function to proxy requests (POST/GET) to the MPI_URL."""
+def _proxy_request(path, content_type, prefix=""):
+    """Helper function to proxy requests (POST/GET) to the MPI_URL."""
     url = app.config["MPI_URL"] + path
     # ... (omitting print statements for brevity) ...
     

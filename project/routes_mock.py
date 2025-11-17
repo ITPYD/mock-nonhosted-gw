@@ -155,9 +155,6 @@ def mock_mareq():
 # CORE PROXY FUNCTION (Finalized with all URL replacements)
 #------------------------
 
-
-
-
 @app.route('/mock/3ds/<path:subpath>', methods=['GET', 'POST'])
 def mock_3ds_proxy(subpath):
     """Proxies 3DS content (callback/mon) to overcome CORS issues."""

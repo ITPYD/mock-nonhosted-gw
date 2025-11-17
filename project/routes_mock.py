@@ -164,6 +164,7 @@ def mock_3ds_proxy(subpath):
     remote_url = f"{base_3ds_url}/{subpath}"
     
     print(f"--- 3DS PROXY: Fetching {remote_url} ---")
+    print(f"--- 3DS PROXY: Request args {request.args} ---")
 
     # CRITICAL FIX: Extract essential headers from the browser's request
     # We copy all headers except ones that might interfere with requests (like Host, Content-Length)
@@ -177,16 +178,18 @@ def mock_3ds_proxy(subpath):
     try:
         # 1. Execute the request to the remote 3DS server
         if request.method == 'POST':
+            # FIX 1: Pass the captured headers
+            # FIX 2: Pass the query parameters via 'params'
             resp = requests.post(remote_url, 
-                                 headers=proxied_headers,  # PASS THE HEADERS
-                                 data=request.data, 
+                                 headers=proxied_headers,
+                                 params=request.args,  # <--- CRITICAL: Forwards transId, did
+                                 data=request.data,    # Forwards browser info form data
                                  verify=True, timeout=30)
-        else:
+        else: # GET request
             resp = requests.get(remote_url, 
-                                headers=proxied_headers,  # PASS THE HEADERS
+                                headers=proxied_headers,
                                 params=request.args, 
-                                verify=True, timeout=30) 
-
+                                verify=True, timeout=30)
         response_content = resp.content
         
         # 2. Apply the URL Patching (keeping this active as confirmed necessary)

@@ -133,15 +133,23 @@ def mock_card_req():
 #------------------------
 
 # In your routes_mock.py
-
 #------------------------
 # CORE PROXY FUNCTION (Finalized with all URL replacements)
 #------------------------
-
+@app.route('/mock/3ds/<path:subpath>', methods=['GET', 'POST'])
 def _proxy_request(path, content_type, prefix=""):
-    """Helper function to proxy requests (POST/GET) to the MPI_URL, with CORS/3DS patching."""
-    url = app.config["MPI_URL"] + path
-    # ... (omitting request headers/data and method logic) ...
+    """Proxies 3DS content (callback/mon) to overcome CORS issues."""
+    
+    # 1. Reconstruct the remote URL using the *new* 3DS domain
+    # You may need to add this new base URL to your app.config
+    base_3ds_url = 'https://paydee-test.as1.gpayments.net'
+    
+    # subpath will contain the full path: api/v2/brw/callback?...
+    remote_url = f"{base_3ds_url}/{subpath}"
+    
+    print(f"--- 3DS PROXY: Fetching {remote_url} ---")
+    
+    # ... (Reuse your existing fetch and response logic here) ...
 
     try:
         # 1. Execute the request to the remote server
@@ -179,6 +187,34 @@ def _proxy_request(path, content_type, prefix=""):
         error = str(e)
         print(f"--- Proxy Error --- \n{error}")
         return Response(error, status=500)
+    
+
+# @app.route('/mock/3ds/<path:subpath>', methods=['GET', 'POST'])
+# def mock_3ds_proxy(subpath):
+#     """Proxies 3DS content (callback/mon) to overcome CORS issues."""
+    
+#     # 1. Reconstruct the remote URL using the *new* 3DS domain
+#     # You may need to add this new base URL to your app.config
+#     base_3ds_url = 'https://paydee-test.as1.gpayments.net'
+    
+#     # subpath will contain the full path: api/v2/brw/callback?...
+#     remote_url = f"{base_3ds_url}/{subpath}"
+    
+#     print(f"--- 3DS PROXY: Fetching {remote_url} ---")
+    
+#     # ... (Reuse your existing fetch and response logic here) ...
+#     try:
+#         if request.method == 'POST':
+#             resp = requests.post(remote_url, data=request.data, verify=True, timeout=30)
+#         else:
+#             # Pass query string params from the local request to the remote request
+#             resp = requests.get(remote_url, params=request.args, verify=True, timeout=30) 
+
+#         # We must return the exact content and headers
+#         return resp.content, resp.status_code, {'Content-Type': resp.headers['Content-Type']}
+        
+#     except Exception as e:
+#         return f"Error proxying 3DS: {e}", 500
 
 @app.route('/mpi/resources/<path:filename>', methods=['GET', 'POST'])
 @app.route('/mock/resources/<path:filename>', methods=['GET', 'POST'])

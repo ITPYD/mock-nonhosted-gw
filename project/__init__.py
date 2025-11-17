@@ -20,6 +20,7 @@ app.config['KEY_PATH'] = "./project/static/data/key"
 #app.config['KEY_PATH'] = "D:\dev\paydee.devop\mpidevbox\project\static\data\key"
 
 app.config['MPI_URL'] = os.environ.get('MPI_URL', 'https://devlink2.paydee.co/mpi')
+app.config['MPI_URL2'] = os.environ.get('MPI_UR2L', 'https://devlink2.paydee.co/')
 #app.config['MPI_URL'] = 'https://pag-v3.onrender.com/'
 
 app.config['REMOTE_MPI_DOMAIN'] = "https://devlink.paydee.co/mpi"

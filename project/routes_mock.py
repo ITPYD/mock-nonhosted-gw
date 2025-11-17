@@ -144,7 +144,7 @@ def _custom_proxy_request(path, data_payload, prefix=""):
     Helper function to proxy requests (POST) with a SPECIFIC custom data payload.
     This bypasses using the global request.form, which is necessary for multi-step processing.
     """
-    url = app.config["MPI_URL"] + path
+    url = app.config["MPI_URL2"] + path
     print(f"-----{prefix}: {path[1:]} (CUSTOM PAYLOAD)---------")
     print(f"Proxying request to: {url}")
     
@@ -208,7 +208,8 @@ def mock_mpreq():
     # The return value of the first call is ignored because we want to return the FPX initiation page.
     ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
 
-    print(f"{ret}")
+    print(f"--- NON-HOSTED ({subpath}): {ret.content.decode('utf-8', errors='ignore')}")
+    print(f"--- NON-HOSTED Response Status: {ret.status_code} ---")
 
     # 3. Construct the data payload for fpx/init
     # This payload is for the second request, which initiates the bank selection screen.

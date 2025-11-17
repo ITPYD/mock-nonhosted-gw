@@ -150,7 +150,7 @@ def mock_mareq():
 def mock_notify_req():
     """Handles the final form submission from the 3DS iFrame and proxies it."""
     # This request should be proxied back to the remote MPI server to complete the 3DS flow.
-    return _proxy_request("/mpi/notifyReq", 'application/x-www-form-urlencoded', prefix="mock")
+    return _proxy_request("/notifyReq", 'application/x-www-form-urlencoded', prefix="mock")
 
 #------------------------
 # STATIC RESOURCE PROXY (CRITICAL FIX FOR CSS/JS/IMAGES)

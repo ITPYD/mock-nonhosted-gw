@@ -196,6 +196,7 @@ def mock_mpreq():
     2. Assumes success and constructs a new payload for fpx/init.
     3. Proxies the fpx/init request using the custom payload and returns the final response.
     """
+    print(f" ==== mpReq === \n")
     
     # 1. Capture the original request data before it's used by the first proxy call.
     # This data contains critical fields like MPI_MERC_ID and MPI_EMAIL.
@@ -226,7 +227,7 @@ def mock_mpreq():
     # This returns the final HTML to the client (usually the bank selection/redirect page).
     return _custom_proxy_request("/fpx/init", fpx_data_payload, prefix="mock")
 
-
+# 
 @app.route('/mock/mercReq', methods=['GET', 'POST'])
 def mock_mercreq():
     return _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")

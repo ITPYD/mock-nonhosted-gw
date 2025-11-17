@@ -14,10 +14,22 @@ from project.key import Key
 #------------------------
 def _proxy_request(path, content_type, prefix=""):
     """Helper function to proxy requests (POST/GET) to the MPI_URL."""
+    """Helper function to proxy requests (POST/GET) to the MPI_URL."""
     url = app.config["MPI_URL"] + path
-    # ... (omitting print statements for brevity) ...
+    print(f"-----{prefix}: {path[1:]}---------")
+    print(f"Proxying request to: {url}")
     
-    # ... (omitting request headers/data logic) ...
+    # Determine which data source to use based on content type
+    if 'json' in content_type:
+        request_data = request.data
+    else:
+        # Use request.form for standard form submissions (x-www-form-urlencoded)
+        request_data = request.form
+        
+    headers = {'Content-Type': content_type}
+    
+    # Determine the HTTP method to use for the request
+    method = request.method.upper()
 
     try:
         # ... (omitting requests.post/get logic) ...

@@ -69,6 +69,15 @@ def _proxy_request(path, content_type, prefix=""):
 
         # ===================================
 
+        # WEBHOOK
+        DEFAULT_WEBHOOK = 'https://merchant.domain/merchant_webhook_url'
+        LOCAL_WEBHOOK = 'https://devlinkv2.paydee.co/mpigw/payment/status'
+
+
+        if DEFAULT_WEBHOOK in response_content:
+            print(f"--- DEFAULT WEBHOOK PATCH APPLIED: {subpath} ---")
+            response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
+
         print(f"--- Response: {r.status_code} ---")
         # print(response_content) # Print the modified content here for debugging
         
@@ -211,6 +220,7 @@ def mock_3ds_proxy(subpath):
         REMOTE_MPI_DOMAIN = b'https://devlink.paydee.co/mpi/notifyReq'
         LOCAL_NOTIFY_PATH = b'/mock/notifyReq' # Create this new route
 
+
         if REMOTE_3DS_PREFIX in response_content:
             print(f"--- 3DS PROXY PATCH APPLIED: {subpath} ---")
             response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
@@ -219,6 +229,16 @@ def mock_3ds_proxy(subpath):
         if REMOTE_MPI_DOMAIN in response_content:
             print(f"--- 3DS PROXY PATCH APPLIED (MPI domain): {subpath} ---")
             response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_NOTIFY_PATH)
+
+
+        # WEBHOOK
+        DEFAULT_WEBHOOK = 'https://merchant.domain/merchant_webhook_url'
+        LOCAL_WEBHOOK = 'https://devlinkv2.paydee.co/mpigw/payment/status'
+
+
+        if DEFAULT_WEBHOOK in response_content:
+            print(f"--- DEFAULT WEBHOOK PATCH APPLIED: {subpath} ---")
+            response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
 
         # 3. Return the patched content with all original response headers
         return Response(response_content, status=resp.status_code, headers=resp.headers)

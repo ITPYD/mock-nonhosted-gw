@@ -73,11 +73,19 @@ def _custom_proxy_request(path, data, prefix):
     """Helper function for the final initiation request using a custom payload."""
     url = app.config["MPIGW_URL"] + "/" + path
     print(f"*** {prefix}: Proxying final request to: {url}")
+    print(f"*** {data}")
 
     try:
         # NOTE: requests.post call is mocked here.
         
         r = requests.post(url, data=data, verify=False, timeout=30)
+
+
+        response_content = r.content
+        print("--- DEBUG: FULL CONTENT FOR /mercReq RESPONSE ---")
+        print(response_content.decode('utf-8', errors='ignore'))
+        print("-----------------------------------------------")
+
         return Response(r.content, status=r.status_code, mimetype=r.headers.get('Content-Type', 'text/html'))
         
         # # --- MOCKING A SUCCESSFUL FINAL REDIRECT RESPONSE ---

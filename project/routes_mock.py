@@ -15,7 +15,7 @@ from project.key import Key
 def _proxy_request(path, content_type, prefix=""):
     """Helper function to proxy requests (POST/GET) to the MPI_URL."""
 
-    url = app.config["MPI_URL"] + path
+    url = app.config["MPIGW_URL"] + path
     print(f"-----{prefix}: {path[1:]}---------")
     print(f"Proxying request to: {url}")
     

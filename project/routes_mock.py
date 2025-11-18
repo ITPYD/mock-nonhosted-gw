@@ -107,9 +107,9 @@ def mock_mpreq():
     # Get the payment channel ID and standardize it for comparison
     channel_id = original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank').upper()
     if channel_id in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
-        target_endpoint_path = "mpigw/wallet/init"
+        target_endpoint_path = "wallet/init"
     else:
-        target_endpoint_path = "mpigw/fpx/init"
+        target_endpoint_path = "fpx/init"
 
 
     ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")

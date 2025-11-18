@@ -19,8 +19,9 @@ def _proxy_request(path, content_type, prefix=""):
 
     # Using mock_app.config for demonstration, replace with app.config in production
     url = app.config["MPIGW_URL"] + path
-    print(f"-----{prefix}: {path[1:]}---------")
+    print(f"-----{prefix}: {path}---------")
     print(f"Proxying request to: {url}")
+        
     
     # Determine which data source to use based on content type
     if 'json' in content_type:
@@ -31,7 +32,8 @@ def _proxy_request(path, content_type, prefix=""):
         # In a real app: request_data = request.form
         request_data = request.form # Get actual form data from the incoming request
         data_to_send = request_data
-        
+        print(f"=== {request_data}")
+
     headers = {'Content-Type': content_type}
     method = request.method.upper()
 
@@ -51,6 +53,9 @@ def _proxy_request(path, content_type, prefix=""):
             print("--- DEBUG: FULL CONTENT FOR /mercReq RESPONSE ---")
             print(response_content.decode('utf-8', errors='ignore'))
             print("-----------------------------------------------")
+            r = requests.post("https://devlink.paydee.co/mpi/mercReq", headers=headers, data=data_to_send, verify=False, timeout=30)
+            r_status_code = r.status_code
+            response_content = r.content
 
         # ... (omitting Cross-Origin/Webhook Fix logic for brevity) ...
 
@@ -73,7 +78,7 @@ def _custom_proxy_request(path, data, prefix):
     """Helper function for the final initiation request using a custom payload."""
     url = app.config["MPIGW_URL"] + "/" + path
     print(f"*** {prefix}: Proxying final request to: {url}")
-    print(f"*** {data}")
+    print(f"=== {data}")
 
     try:
         # NOTE: requests.post call is mocked here.

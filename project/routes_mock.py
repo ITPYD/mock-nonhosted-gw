@@ -39,13 +39,13 @@ def _proxy_request(path, content_type, prefix=""):
         # NOTE: The actual 'requests' library call is replaced with a mock 
         # to ensure the file remains self-contained and runnable.
         
-        # r = requests.post(url, headers=headers, data=data_to_send, verify=False, timeout=30)
-        # r_status_code = r.status_code
-        # response_content = r.content
+        r = requests.post(url, headers=headers, data=data_to_send, verify=False, timeout=30)
+        r_status_code = r.status_code
+        response_content = r.content
         
         # --- MOCKING A SUCCESSFUL requests RESPONSE ---
-        r_status_code = 200
-        response_content = b'MOCK: Transaction Registered Successfully'
+        #r_status_code = 200
+        #response_content = b'MOCK: Transaction Registered Successfully'
         
         if path == "/mercReq":
             print("--- DEBUG: FULL CONTENT FOR /mercReq RESPONSE ---")
@@ -77,12 +77,12 @@ def _custom_proxy_request(path, data, prefix):
     try:
         # NOTE: requests.post call is mocked here.
         
-        # r = requests.post(url, data=data, verify=False, timeout=30)
-        # return Response(r.content, status=r.status_code, mimetype=r.headers.get('Content-Type', 'text/html'))
+        r = requests.post(url, data=data, verify=False, timeout=30)
+        return Response(r.content, status=r.status_code, mimetype=r.headers.get('Content-Type', 'text/html'))
         
-        # --- MOCKING A SUCCESSFUL FINAL REDIRECT RESPONSE ---
-        html_content = f"<html><body><p>Mock Payment Redirect for {path.split('/')[-1].upper()}</p><p>Channel: {data.get('PAG_CHANNEL_NAME')}</p></body></html>"
-        return Response(html_content, status=200, mimetype='text/html')
+        # # --- MOCKING A SUCCESSFUL FINAL REDIRECT RESPONSE ---
+        # html_content = f"<html><body><p>Mock Payment Redirect for {path.split('/')[-1].upper()}</p><p>Channel: {data.get('PAG_CHANNEL_NAME')}</p></body></html>"
+        # return Response(html_content, status=200, mimetype='text/html')
         
     except Exception as e:
         error = str(e)
@@ -120,6 +120,9 @@ def mock_mpreq():
         # In a real app, you would render a user-friendly error page.
         error_message = ret.get('message', 'Transaction registration failed due to unknown error.')
         return f"Transaction Registration Failed: {error_message}", 500
+
+
+
 
     # 3. Construct the data payload for fpx/init
     # This payload is for the second request, which initiates the bank selection screen.

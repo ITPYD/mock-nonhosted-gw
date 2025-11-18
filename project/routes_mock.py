@@ -8,7 +8,8 @@ import project.routes
 from project.mpi import MPI
 from project.key import Key
 
-
+from flask import Flask, jsonify, request, Response
+import json # You'll need this import if not already present
 #------------------------
 # CORE PROXY FUNCTION
 #------------------------
@@ -87,9 +88,9 @@ def _proxy_request(path, content_type, prefix=""):
         DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
         LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
 
-        if DEFAULT_WEBHOOK in response_content:
-            print(f"--- DEFAULT WEBHOOK PATCH APPLIED ---")
-            response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
+        # if DEFAULT_WEBHOOK in response_content:
+        #     print(f"--- DEFAULT WEBHOOK PATCH APPLIED ---")
+        #     response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
 
 
 
@@ -168,6 +169,7 @@ def _custom_proxy_request(path, data_payload, prefix=""):
 
 
 # --- UPDATED /mock/mpReq ROUTE ---
+@app.route('/dev/mpReq', methods=['GET', 'POST'])
 @app.route('/mock/mpReq', methods=['GET', 'POST'])
 def mock_mpreq():
     """
@@ -209,11 +211,13 @@ def mock_mpreq():
     return _custom_proxy_request("mpigw/fpx/init", fpx_data_payload, prefix="mock")
 
 # 
+@app.route('/dev/mercReq', methods=['GET', 'POST'])
 @app.route('/mock/mercReq', methods=['GET', 'POST'])
 def mock_mercreq():
     return _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
 
 # The route that returns the HTML form
+@app.route('/dev/mkReq', methods=['GET', 'POST'])
 @app.route('/mock/mkReq', methods=['GET', 'POST'])
 def mock_mkreq():
     print("debug")
@@ -221,29 +225,31 @@ def mock_mkreq():
     return _proxy_request("/mkReq", 'application/json', prefix="mock")
 
 # NEW: Route to handle the form submission action "cardReq"
+@app.route('/dev/cardReq', methods=['POST'])
 @app.route('/mock/cardReq', methods=['POST'])
 def mock_card_req():
     """Handles the form submission from the proxied HTML page."""
     # This route intercepts the POST from the HTML form and proxies it to the remote API
     return _proxy_request("/cardReq", 'application/x-www-form-urlencoded', prefix="mock")
 
+@app.route('/dev/maReq', methods=['POST'])
 @app.route('/mock/maReq', methods=['POST'])
 def mock_mareq():
     """Handles the form submission action 'maReq' and proxies it to the remote MPI."""
     # This request contains the final browser info and is a standard form submission.
     return _proxy_request("/maReq", 'application/x-www-form-urlencoded', prefix="mock")
 
+@app.route('/dev/notifyReq', methods=['POST'])
 @app.route('/mock/notifyReq', methods=['POST'])
 def mock_notify_req():
     """Handles the final form submission from the 3DS iFrame and proxies it."""
     # This request should be proxied back to the remote MPI server to complete the 3DS flow.
     return _proxy_request("/notifyReq", 'application/x-www-form-urlencoded', prefix="mock")
 
-from flask import Flask, jsonify, request, Response
-import json # You'll need this import if not already present
 
-# Assume 'app = Flask(__name__)' is already defined
 
+
+@app.route('/dev/channels', methods=['POST', 'GET'])
 @app.route('/mock/channels', methods=['POST', 'GET'])
 def mock_channels():
     """
@@ -283,7 +289,7 @@ def mock_channels():
 # CORE PROXY FUNCTION (Finalized with all URL replacements)
 #------------------------
 
-
+@app.route('/dev/3ds/<path:subpath>', methods=['GET', 'POST'])
 @app.route('/mock/3ds/<path:subpath>', methods=['GET', 'POST'])
 def mock_3ds_proxy(subpath):
     """Proxies 3DS content (callback/mon) and patches URLs to bypass CORS."""
@@ -397,7 +403,7 @@ def mock_js_proxy(filename):
 
 
 
-
+@app.route('/dev/resources/<path:filename>', methods=['GET', 'POST'])
 @app.route('/mpi/resources/<path:filename>', methods=['GET', 'POST'])
 @app.route('/mock/resources/<path:filename>', methods=['GET', 'POST'])
 def mock_resource_proxy(filename):

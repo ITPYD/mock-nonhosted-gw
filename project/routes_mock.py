@@ -1,15 +1,16 @@
 import requests, os, random
 from project import app
 from datetime import date, time, datetime, timedelta
-from flask import current_app, render_template, redirect, url_for, flash, request, send_file, send_from_directory, abort, Response
+from flask import current_app, render_template, redirect, url_for, flash, request, send_file, send_from_directory, abort, Response, Flask, jsonify
 from werkzeug.utils import safe_join # This import should now be resolved
+import json # You'll need this import if not already present
+
 
 import project.routes
 from project.mpi import MPI
 from project.key import Key
 
-from flask import Flask, jsonify, request, Response
-import json # You'll need this import if not already present
+
 #------------------------
 # CORE PROXY FUNCTION
 #------------------------
@@ -60,9 +61,6 @@ def _proxy_request(path, content_type, prefix=""):
         
         # 1. Define the remote 3DS URL prefix to be replaced (e.g., the iframe source)
         REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
-        
-        # 2. Define the local mock URL prefix
-        # We use a path that maps to your new @app.route('/mock/3ds/<path:subpath>')
         LOCAL_3DS_PREFIX = b'/mock/3ds'
         
         # if REMOTE_3DS_PREFIX in response_content:
@@ -169,7 +167,7 @@ def _custom_proxy_request(path, data_payload, prefix=""):
 
 
 # --- UPDATED /mock/mpReq ROUTE ---
-@app.route('/dev/mpReq', methods=['GET', 'POST'])
+@app.route('/pag/mpReq', methods=['GET', 'POST'])
 @app.route('/mock/mpReq', methods=['GET', 'POST'])
 def mock_mpreq():
     """
@@ -211,13 +209,13 @@ def mock_mpreq():
     return _custom_proxy_request("mpigw/fpx/init", fpx_data_payload, prefix="mock")
 
 # 
-@app.route('/dev/mercReq', methods=['GET', 'POST'])
+@app.route('/pag/mercReq', methods=['GET', 'POST'])
 @app.route('/mock/mercReq', methods=['GET', 'POST'])
 def mock_mercreq():
     return _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
 
 # The route that returns the HTML form
-@app.route('/dev/mkReq', methods=['GET', 'POST'])
+@app.route('/pag/mkReq', methods=['GET', 'POST'])
 @app.route('/mock/mkReq', methods=['GET', 'POST'])
 def mock_mkreq():
     print("debug")
@@ -225,21 +223,21 @@ def mock_mkreq():
     return _proxy_request("/mkReq", 'application/json', prefix="mock")
 
 # NEW: Route to handle the form submission action "cardReq"
-@app.route('/dev/cardReq', methods=['POST'])
+@app.route('/pag/cardReq', methods=['POST'])
 @app.route('/mock/cardReq', methods=['POST'])
 def mock_card_req():
     """Handles the form submission from the proxied HTML page."""
     # This route intercepts the POST from the HTML form and proxies it to the remote API
     return _proxy_request("/cardReq", 'application/x-www-form-urlencoded', prefix="mock")
 
-@app.route('/dev/maReq', methods=['POST'])
+@app.route('/pag/maReq', methods=['POST'])
 @app.route('/mock/maReq', methods=['POST'])
 def mock_mareq():
     """Handles the form submission action 'maReq' and proxies it to the remote MPI."""
     # This request contains the final browser info and is a standard form submission.
     return _proxy_request("/maReq", 'application/x-www-form-urlencoded', prefix="mock")
 
-@app.route('/dev/notifyReq', methods=['POST'])
+@app.route('/pag/notifyReq', methods=['POST'])
 @app.route('/mock/notifyReq', methods=['POST'])
 def mock_notify_req():
     """Handles the final form submission from the 3DS iFrame and proxies it."""
@@ -247,9 +245,7 @@ def mock_notify_req():
     return _proxy_request("/notifyReq", 'application/x-www-form-urlencoded', prefix="mock")
 
 
-
-
-@app.route('/dev/channels', methods=['POST', 'GET'])
+@app.route('/pag/channels', methods=['POST', 'GET'])
 @app.route('/mock/channels', methods=['POST', 'GET'])
 def mock_channels():
     """
@@ -289,7 +285,7 @@ def mock_channels():
 # CORE PROXY FUNCTION (Finalized with all URL replacements)
 #------------------------
 
-@app.route('/dev/3ds/<path:subpath>', methods=['GET', 'POST'])
+@app.route('/pag/3ds/<path:subpath>', methods=['GET', 'POST'])
 @app.route('/mock/3ds/<path:subpath>', methods=['GET', 'POST'])
 def mock_3ds_proxy(subpath):
     """Proxies 3DS content (callback/mon) and patches URLs to bypass CORS."""
@@ -403,7 +399,7 @@ def mock_js_proxy(filename):
 
 
 
-@app.route('/dev/resources/<path:filename>', methods=['GET', 'POST'])
+@app.route('/pag/resources/<path:filename>', methods=['GET', 'POST'])
 @app.route('/mpi/resources/<path:filename>', methods=['GET', 'POST'])
 @app.route('/mock/resources/<path:filename>', methods=['GET', 'POST'])
 def mock_resource_proxy(filename):

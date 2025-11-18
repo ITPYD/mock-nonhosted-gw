@@ -110,8 +110,6 @@ def _proxy_request(path, content_type, prefix=""):
 #------------------------
 
 
-
-# --- NEW HELPER FUNCTION FOR CUSTOM PAYLOADS ---
 def _custom_proxy_request(path, data_payload, prefix=""):
     """
     Helper function to proxy requests (POST) with a SPECIFIC custom data payload.
@@ -178,16 +176,24 @@ def mock_mpreq():
     """
     print(f" ==== mpReq === \n")
     
-    # 1. Capture the original request data before it's used by the first proxy call.
-    # This data contains critical fields like MPI_MERC_ID and MPI_EMAIL.
-    original_data = dict(request.form)
-    
-    # 2. First call: Proxy the transaction registration (mercReq)
-    # Note: We must call _proxy_request first to register the transaction and get a response.
-    # For simplicity, we assume mercReq is successful (HTTP 200) and proceed.
-    # The return value of the first call is ignored because we want to return the FPX initiation page.
-    ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
 
+    original_data = dict(request.form)
+    # Get the payment channel ID and standardize it for comparison
+    channel_id = original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank').upper()
+    if channel_id in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
+        target_endpoint_path = "mpigw/wallet/init"
+    else:
+        target_endpoint_path = "mpigw/fpx/init"
+
+
+    ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
+    # Check the result of the mercReq proxy call (New requirement implemented here)
+    if ret.get('status') != 200:
+        print(f"ERROR: mercReq failed with response: {ret}")
+        # Fail early and return an error response
+        # In a real app, you would render a user-friendly error page.
+        error_message = ret.get('message', 'Transaction registration failed due to unknown error.')
+        return f"Transaction Registration Failed: {error_message}", 500
 
     # 3. Construct the data payload for fpx/init
     # This payload is for the second request, which initiates the bank selection screen.
@@ -195,18 +201,13 @@ def mock_mpreq():
         # Copied/Derived from the incoming request (mercReq)
         "PAG_MERCHANT_ID": original_data.get('MPI_MERC_ID', '000000000000033'),
         "PAG_CUST_EMAIL": original_data.get('MPI_EMAIL', 'test@example.com'),
-        
-        # New/Hardcoded/Selected data for FPX initiation
-        # Note: PAG_TRANS_ID should ideally be derived or newly generated to be unique.
         "PAG_TRANS_ID": original_data.get('MPI_TRXN_ID', 'mdl_default_id'),
-        "PAG_CHANNEL_NAME": "Public Bank", # Example bank selection
+        "PAG_CHANNEL_NAME": channel_id,
         "PAG_ORDER_DETAIL": "PAG Merchant Order",
         "PAG_MAC": "Some-Random-MAC-String-For-FPX", # Placeholder MAC for FPX
     }
     
-    # 4. Second call: FPX initiation (/fpx/init) using the custom payload
-    # This returns the final HTML to the client (usually the bank selection/redirect page).
-    return _custom_proxy_request("mpigw/fpx/init", fpx_data_payload, prefix="mock")
+    return _custom_proxy_request(target_endpoint_path, fpx_data_payload, prefix="mock")
 
 # 
 @app.route('/pag/mercReq', methods=['GET', 'POST'])

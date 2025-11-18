@@ -124,6 +124,7 @@ def _custom_proxy_request(path, data_payload, prefix=""):
     url = app.config["MPI_URL2"] + path
     print(f"-----{prefix}: {path[1:]} (CUSTOM PAYLOAD)---------")
     print(f"Proxying request to: {url}")
+    print(f"Custom data payload: {data_payload}"")
     
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     
@@ -185,6 +186,9 @@ def mock_mpreq():
     # 1. Capture the original request data before it's used by the first proxy call.
     # This data contains critical fields like MPI_MERC_ID and MPI_EMAIL.
     original_data = dict(request.form)
+    print(f"debug {original_data}")
+
+
     # Get the payment channel ID and standardize it for comparison
     channel_id = original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank').upper()
     if channel_id in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
@@ -211,9 +215,6 @@ def mock_mpreq():
         # Copied/Derived from the incoming request (mercReq)
         "PAG_MERCHANT_ID": original_data.get('MPI_MERC_ID', '000000000000033'),
         "PAG_CUST_EMAIL": original_data.get('MPI_EMAIL', 'test@example.com'),
-        
-        # New/Hardcoded/Selected data for FPX initiation
-        # Note: PAG_TRANS_ID should ideally be derived or newly generated to be unique.
         "PAG_TRANS_ID": original_data.get('MPI_TRXN_ID', 'mdl_default_id'),
         "PAG_CHANNEL_NAME": channel_id,
         "PAG_ORDER_DETAIL": "PAG Merchant Order",

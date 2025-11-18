@@ -216,7 +216,7 @@ def mock_mpreq():
         "PAG_MERCHANT_ID": original_data.get('MPI_MERC_ID', '000000000000033'),
         "PAG_CUST_EMAIL": original_data.get('MPI_EMAIL', 'test@example.com'),
         "PAG_TRANS_ID": original_data.get('MPI_TRXN_ID', 'mdl_default_id'),
-        "PAG_CHANNEL_NAME": channel_id,
+        "PAG_CHANNEL_NAME": original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank'), 
         "PAG_ORDER_DETAIL": "PAG Merchant Order",
         "PAG_MAC": "Some-Random-MAC-String-For-FPX", # Placeholder MAC for FPX
     }

@@ -64,22 +64,22 @@ def _proxy_request(path, content_type, prefix=""):
         # We use a path that maps to your new @app.route('/mock/3ds/<path:subpath>')
         LOCAL_3DS_PREFIX = b'/mock/3ds'
         
-        if REMOTE_3DS_PREFIX in response_content:
-            print("--- CROSS-ORIGIN PATCH APPLIED ---")
-            response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
+        # if REMOTE_3DS_PREFIX in response_content:
+        #     print("--- CROSS-ORIGIN PATCH APPLIED ---")
+        #     response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
         
         # === END: CROSS-ORIGIN FIX (3DS) ===
 
         # ===================================
-
+        # app.config['REMOTE_MPI_DOMAIN'] = "https://devlink.paydee.co/mpi"
         REMOTE_MPI_DOMAIN = app.config["REMOTE_MPI_DOMAIN"].encode('utf-8')
         LOCAL_ROOT_PATH = b'/'
 
-        if REMOTE_MPI_DOMAIN in response_content:
-            print(f"--- FINAL REDIRECT PATCH APPLIED (Replacing {REMOTE_MPI_DOMAIN.decode()} with {LOCAL_ROOT_PATH.decode()}) ---")
-            # Replace the full remote MPI base URL with your local root path.
-            # This makes the final form submit to your application's root path or relative link.
-            response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
+        # if REMOTE_MPI_DOMAIN in response_content:
+        #     print(f"--- FINAL REDIRECT PATCH APPLIED (Replacing {REMOTE_MPI_DOMAIN.decode()} with {LOCAL_ROOT_PATH.decode()}) ---")
+        #     # Replace the full remote MPI base URL with your local root path.
+        #     # This makes the final form submit to your application's root path or relative link.
+        #     response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
 
         # ===================================
 
@@ -105,45 +105,12 @@ def _proxy_request(path, content_type, prefix=""):
         print(f"--- Proxy Error --- \n{error}")
         return Response(error, status=500)
 
-# def _proxy_request(path, content_type, prefix=""):
-#     """Helper function to proxy requests (POST/GET) to the MPI_URL."""
-#     url = app.config["MPI_URL"] + path
-#     print(f"-----{prefix}: {path[1:]}---------")
-#     print(f"Proxying request to: {url}")
-    
-#     # Determine which data source to use based on content type
-#     if 'json' in content_type:
-#         request_data = request.data
-#     else:
-#         # Use request.form for standard form submissions (x-www-form-urlencoded)
-#         request_data = request.form
-        
-#     headers = {'Content-Type': content_type}
-    
-#     # Determine the HTTP method to use for the request
-#     method = request.method.upper()
-
-#     try:
-#         if method == 'POST':
-#             r = requests.post(url, headers=headers, data=request_data, verify=False, timeout=30)
-#         else: # Default to GET for simplicity if not POST
-#             r = requests.get(url, headers=headers, params=request_data, verify=False, timeout=30)
-
-#         print(f"--- Response: {r.status_code} ---")
-#         print(r.content)
-#         return Response(r.content, status=r.status_code)
-        
-#     except Exception as e:
-#         error = str(e)
-#         print(f"--- Proxy Error --- \n{error}")
-#         return Response(error, status=500)
 
 #------------------------
 # MOCK ROUTES (API ENDPOINTS)
 #------------------------
 
-# (Your existing imports: from flask import Flask, jsonify, request, Response)
-# (Your existing imports: import requests, json)
+
 
 # --- NEW HELPER FUNCTION FOR CUSTOM PAYLOADS ---
 def _custom_proxy_request(path, data_payload, prefix=""):
@@ -175,20 +142,20 @@ def _custom_proxy_request(path, data_payload, prefix=""):
         # 1. 3DS Domain Patching (if applicable)
         REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
         LOCAL_3DS_PREFIX = b'/mock/3ds'
-        if REMOTE_3DS_PREFIX in response_content:
-            response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
+        # if REMOTE_3DS_PREFIX in response_content:
+        #     response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
 
         # 2. MPI Domain Patching
         REMOTE_MPI_DOMAIN = app.config["REMOTE_MPI_DOMAIN"].encode('utf-8')
         LOCAL_ROOT_PATH = b'/'
-        if REMOTE_MPI_DOMAIN in response_content:
-             response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
+        # if REMOTE_MPI_DOMAIN in response_content:
+        #      response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
 
         # 3. Webhook Patching (The final redirect URL)
         DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
         LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
-        if DEFAULT_WEBHOOK in response_content:
-            response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
+        # if DEFAULT_WEBHOOK in response_content:
+        #     response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
         # === END: CONTENT PATCHING ===
             
         print(f"--- Response: {r.status_code} ---")
@@ -361,29 +328,27 @@ def mock_3ds_proxy(subpath):
         REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
         LOCAL_3DS_PREFIX = b'/mock/3ds'
         
+        # if REMOTE_3DS_PREFIX in response_content:
+        #     print(f"--- 3DS PROXY PATCH APPLIED: {subpath} ---")
+        #     response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
 
         # NEW: The final MPI domain to be patched
         REMOTE_MPI_DOMAIN = b'https://devlink.paydee.co/mpi/notifyReq'
         LOCAL_NOTIFY_PATH = b'/mock/notifyReq' # Create this new route
 
-
-        if REMOTE_3DS_PREFIX in response_content:
-            print(f"--- 3DS PROXY PATCH APPLIED: {subpath} ---")
-            response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
-        
         # CRITICAL NEW PATCHING STEP: Handle the final form action URL
-        if REMOTE_MPI_DOMAIN in response_content:
-            print(f"--- 3DS PROXY PATCH APPLIED (MPI domain): {subpath} ---")
-            response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_NOTIFY_PATH)
+        # if REMOTE_MPI_DOMAIN in response_content:
+        #     print(f"--- 3DS PROXY PATCH APPLIED (MPI domain): {subpath} ---")
+        #     response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_NOTIFY_PATH)
 
 
         # WEBHOOK
         DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
         LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
 
-        if DEFAULT_WEBHOOK in response_content:
-            print(f"--- DEFAULT WEBHOOK PATCH APPLIED ---")
-            response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
+        # if DEFAULT_WEBHOOK in response_content:
+        #     print(f"--- DEFAULT WEBHOOK PATCH APPLIED ---")
+        #     response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
 
         # 3. Return the patched content with all original response headers
         return Response(response_content, status=resp.status_code, headers=resp.headers)
@@ -459,9 +424,9 @@ def mock_resource_proxy(filename):
         DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
         LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
 
-        if DEFAULT_WEBHOOK in response_content:
-            print(f"--- DEFAULT WEBHOOK PATCH APPLIED ---")
-            response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
+        # if DEFAULT_WEBHOOK in response_content:
+        #     print(f"--- DEFAULT WEBHOOK PATCH APPLIED ---")
+        #     response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
 
         # Return the content directly, ensuring correct MIME type is passed
         return response_content, resp.status_code, {'Content-Type': resp.headers['Content-Type']}

@@ -233,7 +233,7 @@ def mock_mpreq():
     
     # 4. Second call: FPX initiation (/fpx/init) using the custom payload
     # This returns the final HTML to the client (usually the bank selection/redirect page).
-    return _custom_proxy_request("/fpx/init", fpx_data_payload, prefix="mock")
+    return _custom_proxy_request("mpigw/fpx/init", fpx_data_payload, prefix="mock")
 
 # 
 @app.route('/mock/mercReq', methods=['GET', 'POST'])

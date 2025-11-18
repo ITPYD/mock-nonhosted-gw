@@ -124,7 +124,7 @@ def _custom_proxy_request(path, data_payload, prefix=""):
     url = app.config["MPI_URL2"] + path
     print(f"-----{prefix}: {path[1:]} (CUSTOM PAYLOAD)---------")
     print(f"Proxying request to: {url}")
-    print(f"Custom data payload: {data_payload}"")
+    print(f"Custom data payload: {data_payload}")
     
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     

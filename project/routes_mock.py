@@ -41,17 +41,17 @@ def _proxy_request(path, content_type, prefix=""):
         response_content = r.content
 
          # --- TEMPORARY DEBUG PRINT START ---
-        if path == "/maReq":
-            print("--- DEBUG: FULL CONTENT FOR /maReq RESPONSE ---")
-            # Decode the content to print the URL string clearly
-            print(response_content.decode('utf-8', errors='ignore'))
-            print("-----------------------------------------------")
+        # if path == "/maReq":
+        #     print("--- DEBUG: FULL CONTENT FOR /maReq RESPONSE ---")
+        #     # Decode the content to print the URL string clearly
+        #     print(response_content.decode('utf-8', errors='ignore'))
+        #     print("-----------------------------------------------")
 
-        if path == "/mercReq":
-            print("--- DEBUG: FULL CONTENT FOR /mercReq RESPONSE ---")
-            # Decode the content to print the URL string clearly
-            print(response_content.decode('utf-8', errors='ignore'))
-            print("-----------------------------------------------")
+        # if path == "/mercReq":
+        #     print("--- DEBUG: FULL CONTENT FOR /mercReq RESPONSE ---")
+        #     # Decode the content to print the URL string clearly
+        #     print(response_content.decode('utf-8', errors='ignore'))
+        #     print("-----------------------------------------------")
 
 
         # === START: CROSS-ORIGIN FIX (3DS) ===
@@ -163,6 +163,12 @@ def _custom_proxy_request(path, data_payload, prefix=""):
             
         response_content = r.content
 
+
+        print("--- DEBUG: FULL CONTENT FOR /mpigw/fpx/init RESPONSE ---")
+        # Decode the content to print the URL string clearly
+        print(response_content.decode('utf-8', errors='ignore'))
+        print("-----------------------------------------------")
+
         # === START: CONTENT PATCHING (CRITICAL) ===
         # The patching logic must be included here to handle redirects from the target server
 
@@ -226,7 +232,7 @@ def mock_mpreq():
         # New/Hardcoded/Selected data for FPX initiation
         # Note: PAG_TRANS_ID should ideally be derived or newly generated to be unique.
         "PAG_TRANS_ID": original_data.get('MPI_TRXN_ID', 'mdl_default_id'),
-        "PAG_CHANNEL_NAME": "Bank Muamalat", # Example bank selection
+        "PAG_CHANNEL_NAME": "Public Bank", # Example bank selection
         "PAG_ORDER_DETAIL": "PAG Merchant Order",
         "PAG_MAC": "Some-Random-MAC-String-For-FPX", # Placeholder MAC for FPX
     }

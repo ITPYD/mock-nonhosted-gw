@@ -114,12 +114,12 @@ def mock_mpreq():
 
     ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
     # Check the result of the mercReq proxy call (New requirement implemented here)
-    if ret.get('status') != 200:
-        print(f"ERROR: mercReq failed with response: {ret}")
-        # Fail early and return an error response
-        # In a real app, you would render a user-friendly error page.
-        error_message = ret.get('message', 'Transaction registration failed due to unknown error.')
-        return f"Transaction Registration Failed: {error_message}", 500
+    # if ret.get('status') != 200:
+    #     print(f"ERROR: mercReq failed with response: {ret}")
+    #     # Fail early and return an error response
+    #     # In a real app, you would render a user-friendly error page.
+    #     error_message = ret.get('message', 'Transaction registration failed due to unknown error.')
+    #     return f"Transaction Registration Failed: {error_message}", 500
 
 
 

@@ -18,7 +18,7 @@ def _proxy_request(path, content_type, prefix=""):
     """Helper function to proxy requests (POST/GET) to the MPI_URL."""
 
     # Using mock_app.config for demonstration, replace with app.config in production
-    url = mock_app.config["MPIGW_URL"] + path
+    url = app.config["MPIGW_URL"] + path
     print(f"-----{prefix}: {path[1:]}---------")
     print(f"Proxying request to: {url}")
     
@@ -71,7 +71,7 @@ def _proxy_request(path, content_type, prefix=""):
 
 def _custom_proxy_request(path, data, prefix):
     """Helper function for the final initiation request using a custom payload."""
-    url = mock_app.config["MPIGW_URL"] + "/" + path
+    url = app.config["MPIGW_URL"] + "/" + path
     print(f"*** {prefix}: Proxying final request to: {url}")
 
     try:

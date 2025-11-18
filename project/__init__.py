@@ -19,6 +19,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['KEY_PATH'] = "./project/static/data/key"
 #app.config['KEY_PATH'] = "D:\dev\paydee.devop\mpidevbox\project\static\data\key"
 
+app.config['MPIGW_URL'] = os.environ.get('MPI_URL', 'https://devlinkv2.paydee.co/mpigw')
 app.config['MPI_URL'] = os.environ.get('MPI_URL', 'https://devlinkv2.paydee.co/mpi')
 app.config['MPI_URL2'] = os.environ.get('MPI_UR2L', 'https://devlinkv2.paydee.co/')
 #app.config['MPI_URL'] = 'https://pag-v3.onrender.com/'

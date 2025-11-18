@@ -393,6 +393,45 @@ def mock_3ds_proxy(subpath):
         print(f"--- 3DS Proxy Error: {error} ---")
         return f"Error proxying 3DS: {e}", 500
 
+@app.route('/mpigw/<path:filename>', methods=['GET', 'POST'])
+def mock_js_proxy(filename):
+    """Proxies requests for static assets (CSS, JS, Images) back to the remote server."""
+    
+    mpi_url = app.config['MPIGW_URL']
+    remote_url = f"{mpi_url}/{filename}"
+    
+    print(f"--- RESOURCE PROXY: Fetching {remote_url} ---")
+    
+    try:
+        # Use the request method from the client for the proxy request
+        if request.method == 'POST':
+            resp = requests.post(remote_url, data=request.data, verify=True)
+        else:
+            resp = requests.get(remote_url, verify=True, timeout=30)
+            
+        print(f"--- RESOURCE PROXY: Response Status: {resp.status_code} ---")
+        print(f"--- RESOURCE PROXY: Response Content-Type: {resp.headers.get('Content-Type')} ---")
+
+
+        response_content = resp.content
+        # # WEBHOOK
+        # DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
+        # LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
+
+        # if DEFAULT_WEBHOOK in response_content:
+        #     print(f"--- DEFAULT WEBHOOK PATCH APPLIED ---")
+        #     response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
+
+        # Return the content directly, ensuring correct MIME type is passed
+        return response_content, resp.status_code, {'Content-Type': resp.headers['Content-Type']}
+        
+    except Exception as e:
+        error = str(e)
+        print(f"--- Resource Proxy Error: {error} ---")
+        return f"Error proxying resource: {e}", 500
+
+
+
 
 @app.route('/mpi/resources/<path:filename>', methods=['GET', 'POST'])
 @app.route('/mock/resources/<path:filename>', methods=['GET', 'POST'])

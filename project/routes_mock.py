@@ -56,6 +56,9 @@ def _proxy_request(path, content_type, prefix=""):
             r = requests.post("https://devlink.paydee.co/mpi/mercReq", headers=headers, data=data_to_send, verify=False, timeout=30)
             r_status_code = r.status_code
             response_content = r.content
+            print("--- DEBUG: FULL CONTENT FOR /mercReq RESPONSE ---")
+            print(response_content.decode('utf-8', errors='ignore'))
+            print("-----------------------------------------------")
 
         # ... (omitting Cross-Origin/Webhook Fix logic for brevity) ...
 

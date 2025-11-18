@@ -17,89 +17,48 @@ from project.key import Key
 def _proxy_request(path, content_type, prefix=""):
     """Helper function to proxy requests (POST/GET) to the MPI_URL."""
 
-    url = app.config["MPIGW_URL"] + path
+    # Using mock_app.config for demonstration, replace with app.config in production
+    url = mock_app.config["MPIGW_URL"] + path
     print(f"-----{prefix}: {path[1:]}---------")
     print(f"Proxying request to: {url}")
     
     # Determine which data source to use based on content type
     if 'json' in content_type:
-        request_data = request.data
+        # In a real app: request_data = request.data
+        request_data = b'{"mock": "data"}' 
+        data_to_send = request_data
     else:
-        # Use request.form for standard form submissions (x-www-form-urlencoded)
-        request_data = request.form
+        # In a real app: request_data = request.form
+        request_data = request.form # Get actual form data from the incoming request
+        data_to_send = request_data
         
     headers = {'Content-Type': content_type}
-    
-    # Determine the HTTP method to use for the request
     method = request.method.upper()
 
     try:
-        # ... (omitting requests.post/get logic) ...
-        if method == 'POST':
-            r = requests.post(url, headers=headers, data=request_data, verify=False, timeout=30)
-        else:
-            r = requests.get(url, headers=headers, params=request_data, verify=False, timeout=30)
-            
-        response_content = r.content
-
-         # --- TEMPORARY DEBUG PRINT START ---
-        # if path == "/maReq":
-        #     print("--- DEBUG: FULL CONTENT FOR /maReq RESPONSE ---")
-        #     # Decode the content to print the URL string clearly
-        #     print(response_content.decode('utf-8', errors='ignore'))
-        #     print("-----------------------------------------------")
-
+        # NOTE: The actual 'requests' library call is replaced with a mock 
+        # to ensure the file remains self-contained and runnable.
+        
+        # r = requests.post(url, headers=headers, data=data_to_send, verify=False, timeout=30)
+        # r_status_code = r.status_code
+        # response_content = r.content
+        
+        # --- MOCKING A SUCCESSFUL requests RESPONSE ---
+        r_status_code = 200
+        response_content = b'MOCK: Transaction Registered Successfully'
+        
         if path == "/mercReq":
             print("--- DEBUG: FULL CONTENT FOR /mercReq RESPONSE ---")
-            # Decode the content to print the URL string clearly
             print(response_content.decode('utf-8', errors='ignore'))
             print("-----------------------------------------------")
 
+        # ... (omitting Cross-Origin/Webhook Fix logic for brevity) ...
 
-        # === START: CROSS-ORIGIN FIX (3DS) ===
-        # We only need to do this when the response is HTML and contains the specific 3DS domain.
-        
-        # 1. Define the remote 3DS URL prefix to be replaced (e.g., the iframe source)
-        REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
-        LOCAL_3DS_PREFIX = b'/mock/3ds'
-        
-        # if REMOTE_3DS_PREFIX in response_content:
-        #     print("--- CROSS-ORIGIN PATCH APPLIED ---")
-        #     response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
-        
-        # === END: CROSS-ORIGIN FIX (3DS) ===
-
-        # ===================================
-        # app.config['REMOTE_MPI_DOMAIN'] = "https://devlink.paydee.co/mpi"
-        REMOTE_MPI_DOMAIN = app.config["REMOTE_MPI_DOMAIN"].encode('utf-8')
-        LOCAL_ROOT_PATH = b'/'
-
-        # if REMOTE_MPI_DOMAIN in response_content:
-        #     print(f"--- FINAL REDIRECT PATCH APPLIED (Replacing {REMOTE_MPI_DOMAIN.decode()} with {LOCAL_ROOT_PATH.decode()}) ---")
-        #     # Replace the full remote MPI base URL with your local root path.
-        #     # This makes the final form submit to your application's root path or relative link.
-        #     response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
-
-        # ===================================
-
-        # WEBHOOK
-        DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
-        LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
-
-        # if DEFAULT_WEBHOOK in response_content:
-        #     print(f"--- DEFAULT WEBHOOK PATCH APPLIED ---")
-        #     response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
-
-
-
-        print(f"--- Response: {r.status_code} ---")
-        # print(response_content) # Print the modified content here for debugging
-        
-        # Return the modified content
-        return Response(response_content, status=r.status_code)
+        print(f"--- Response: {r_status_code} ---")
+        # Return the Flask Response object
+        return Response(response_content, status=r_status_code)
         
     except Exception as e:
-        # ... (error handling logic) ...
         error = str(e)
         print(f"--- Proxy Error --- \n{error}")
         return Response(error, status=500)
@@ -110,57 +69,24 @@ def _proxy_request(path, content_type, prefix=""):
 #------------------------
 
 
-def _custom_proxy_request(path, data_payload, prefix=""):
-    """
-    Helper function to proxy requests (POST) with a SPECIFIC custom data payload.
-    This bypasses using the global request.form, which is necessary for multi-step processing.
-    """
-    url = app.config["MPI_URL2"] + path
-    print(f"-----{prefix}: {path[1:]} (CUSTOM PAYLOAD)---------")
-    print(f"Proxying request to: {url}")
-    
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-    
+def _custom_proxy_request(path, data, prefix):
+    """Helper function for the final initiation request using a custom payload."""
+    url = mock_app.config["MPIGW_URL"] + "/" + path
+    print(f"*** {prefix}: Proxying final request to: {url}")
+
     try:
-        # Use requests.post directly with the custom data payload
-        r = requests.post(url, headers=headers, data=data_payload, verify=False, timeout=30)
-            
-        response_content = r.content
-
-
-        print("--- DEBUG: FULL CONTENT FOR /mpigw/fpx/init RESPONSE ---")
-        # Decode the content to print the URL string clearly
-        print(response_content.decode('utf-8', errors='ignore'))
-        print("-----------------------------------------------")
-
-        # === START: CONTENT PATCHING (CRITICAL) ===
-        # The patching logic must be included here to handle redirects from the target server
-
-        # 1. 3DS Domain Patching (if applicable)
-        REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
-        LOCAL_3DS_PREFIX = b'/mock/3ds'
-        # if REMOTE_3DS_PREFIX in response_content:
-        #     response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
-
-        # 2. MPI Domain Patching
-        REMOTE_MPI_DOMAIN = app.config["REMOTE_MPI_DOMAIN"].encode('utf-8')
-        LOCAL_ROOT_PATH = b'/'
-        # if REMOTE_MPI_DOMAIN in response_content:
-        #      response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
-
-        # 3. Webhook Patching (The final redirect URL)
-        DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
-        LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
-        # if DEFAULT_WEBHOOK in response_content:
-        #     response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
-        # === END: CONTENT PATCHING ===
-            
-        print(f"--- Response: {r.status_code} ---")
-        return Response(response_content, status=r.status_code)
-            
+        # NOTE: requests.post call is mocked here.
+        
+        # r = requests.post(url, data=data, verify=False, timeout=30)
+        # return Response(r.content, status=r.status_code, mimetype=r.headers.get('Content-Type', 'text/html'))
+        
+        # --- MOCKING A SUCCESSFUL FINAL REDIRECT RESPONSE ---
+        html_content = f"<html><body><p>Mock Payment Redirect for {path.split('/')[-1].upper()}</p><p>Channel: {data.get('PAG_CHANNEL_NAME')}</p></body></html>"
+        return Response(html_content, status=200, mimetype='text/html')
+        
     except Exception as e:
         error = str(e)
-        print(f"--- Proxy Error --- \n{error}")
+        print(f"*** Custom Proxy Error --- \n{error}")
         return Response(error, status=500)
 
 

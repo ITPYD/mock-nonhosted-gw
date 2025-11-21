@@ -260,12 +260,17 @@ def mock_mpreq():
     """
     
     original_data = dict(request.form)
-    channel_id = original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank').upper()
+    # Get the channel ID from original data, retaining its casing.
+    channel_id = original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank')
     
-    if channel_id in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
-        # target_endpoint_path is no longer needed here, but channel_name is for payload
-        default_channel_name = channel_id
+    # Use the uppercase version for internal comparison logic (Fpx vs Wallet)
+    channel_id_upper = channel_id.upper()
+    
+    if channel_id_upper in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
+        # If it's a wallet, use the original (Camel Case) name for the payload
+        default_channel_name = channel_id 
     else:
+        # If it's an FPX bank, use the original (Camel Case) name for the payload
         default_channel_name = channel_id
 
     # 1. Proxies mercReq
@@ -279,8 +284,10 @@ def mock_mpreq():
     # 2. Construct initiation payload (The data we want to post to /fpx/init)
     fpx_data_payload = {
         "PAG_MERCHANT_ID": original_data.get('MPI_MERC_ID', '000000000000033'),
+        # Note: If MPI_EMAIL is present but empty, it will result in an empty string, which the API might not like.
         "PAG_CUST_EMAIL": original_data.get('MPI_EMAIL', 'test@example.com'),
         "PAG_TRANS_ID": original_data.get('MPI_TRXN_ID', 'mdl_default_id'),
+        # CRITICAL FIX: Use the original casing for the payment channel name in the payload
         "PAG_CHANNEL_NAME": default_channel_name,
         "PAG_ORDER_DETAIL": "PAG Merchant Order",
         "PAG_MAC": "Some-Random-MAC-String-For-FPX", 

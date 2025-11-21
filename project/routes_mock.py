@@ -338,50 +338,97 @@ def _custom_proxy_request(path, data_payload, prefix=""):
 @app.route('/mock/mpReq', methods=['GET', 'POST'])
 def mock_mpreq():
     """
-    Handles the mock flow: 
-    1. Proxies mercReq (transaction registration) using original data.
-    2. Assumes success and constructs a new payload for fpx/init.
-    3. Proxies the fpx/init request using the custom payload and returns the final response.
+    Handles the mock flow (mercReq -> return manual click-through form posting 
+    directly to external /fpx/init with target="_top").
     """
-    print(f" ==== mpReq === \n")
     
-    # 1. Capture the original request data before it's used by the first proxy call.
-    # This data contains critical fields like MPI_MERC_ID and MPI_EMAIL.
     original_data = dict(request.form)
-    print(f"debug {original_data}")
-
-
-    # Get the payment channel ID and standardize it for comparison
-    channel_id = original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank').upper()
-    if channel_id in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
-        target_endpoint_path = "mpigw/wallet/init"
+    # Get the channel ID from original data, retaining its casing.
+    channel_id = original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank')
+    
+    # Use the uppercase version for internal comparison logic (Fpx vs Wallet)
+    channel_id_upper = channel_id.upper()
+    
+    if channel_id_upper in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
+        default_channel_name = channel_id 
     else:
-        target_endpoint_path = "mpigw/fpx/init"
+        default_channel_name = channel_id
 
-
+    # 1. Proxies mercReq
     ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
-    # Check the result of the mercReq proxy call (New requirement implemented here)
-    # if ret.get('status') != 200:
-    #     print(f"ERROR: mercReq failed with response: {ret}")
-    #     # Fail early and return an error response
-    #     # In a real app, you would render a user-friendly error page.
-    #     error_message = ret.get('message', 'Transaction registration failed due to unknown error.')
-    #     return f"Transaction Registration Failed: {error_message}", 500
 
+    # Check the result of the mercReq proxy call using the Response object's .status_code
+    if ret.status_code != 200: 
+        error_message = ret.get_data(as_text=True) 
+        return Response(f"Transaction Registration Failed: {error_message}", status=ret.status_code)
 
-    # 3. Construct the data payload for fpx/init
-    # This payload is for the second request, which initiates the bank selection screen.
-    fpx_data_payload = {
-        # Copied/Derived from the incoming request (mercReq)
+    # 2. Construct initiation payload (Merge original data and new PAG fields)
+    
+    # Start the payload with ALL original form data
+    redirect_payload = dict(original_data)
+    
+    # Overwrite/Add the specific fields required for the next proxy hop (/fpx/init)
+    # This ensures that even if 'MPI_MERC_ID' was missing, 'PAG_MERCHANT_ID' is still set.
+    redirect_payload.update({
         "PAG_MERCHANT_ID": original_data.get('MPI_MERC_ID', '000000000000033'),
         "PAG_CUST_EMAIL": original_data.get('MPI_EMAIL', 'test@example.com'),
         "PAG_TRANS_ID": original_data.get('MPI_TRXN_ID', 'mdl_default_id'),
-        "PAG_CHANNEL_NAME": original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank'), 
+        "PAG_CHANNEL_NAME": default_channel_name,
         "PAG_ORDER_DETAIL": "PAG Merchant Order",
-        "PAG_MAC": "Some-Random-MAC-String-For-FPX", # Placeholder MAC for FPX
-    }
+        "PAG_MAC": "Some-Random-MAC-String-For-FPX", 
+        # Any other hardcoded fields for the /fpx/submit stage should go here
+    })
     
-    return _custom_proxy_request(target_endpoint_path, fpx_data_payload, prefix="mock")
+    # Create hidden inputs from the payload
+    hidden_inputs = ''.join(
+        f'<input type="hidden" name="{k}" value="{v}">' 
+        for k, v in redirect_payload.items()
+    )
+
+    # 3. Define the external endpoint and generate the manual click form
+    EXTERNAL_INIT_URL = app.config["EXTERNAL_INIT_URL"]
+    
+    # Generate the manual click HTML form to POST the fpx_data_payload to the external endpoint
+    form_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Processing Payment...</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {{ font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #f7f7f7; }}
+            .card {{ background-color: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }}
+            h2 {{ color: #333; margin-bottom: 20px; }}
+            p {{ color: #555; margin-bottom: 25px; }}
+            button {{ 
+                padding: 12px 25px; 
+                font-size: 16px; 
+                cursor: pointer; 
+                background-color: #3498db; 
+                color: white; 
+                border: none; 
+                border-radius: 8px;
+                transition: background-color 0.3s;
+            }}
+            button:hover {{ background-color: #2980b9; }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>Payment Redirection Required</h2>
+            <p>Your browser requires a manual step to securely load the external payment gateway in the main window.</p>
+            <form method="post" action="{EXTERNAL_INIT_URL}" target="_top">
+                {hidden_inputs}
+                <button type="submit">Continue to Payment Gateway</button>
+            </form>
+            <p style="margin-top: 25px; font-size: 0.8em; color: #777;">(This action will navigate away from the current page.)</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    print(f"--- DEBUG: Returning Manual Click Form posting directly to {EXTERNAL_INIT_URL} with target=_top ---")
+    return Response(form_html, mimetype='text/html')
 
 # 
 @app.route('/pag/mercReq', methods=['GET', 'POST'])

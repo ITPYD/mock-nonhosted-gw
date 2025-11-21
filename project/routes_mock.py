@@ -113,13 +113,14 @@ def _proxy_request(path, content_type, prefix=""):
 # MOCK ROUTES (API ENDPOINTS)
 #------------------------
 
-
-# --- NEW HELPER FUNCTION FOR CUSTOM PAYLOADS ---
+#------------------------
+# CORE PROXY FUNCTION (CUSTOM PAYLOAD) - HITS EXTERNAL MPI SERVER
+#------------------------
 def _custom_proxy_request(path, data_payload, prefix=""):
     """
-    Helper function to proxy requests (POST) with a SPECIFIC custom data payload.
-    This bypasses using the global request.form, which is necessary for multi-step processing.
+    HITS THE REMOTE MPI SERVER for /fpx/init or /wallet/init and applies content patches.
     """
+    # Using app.config["MPI_URL2"] as per your provided code
     url = app.config["MPI_URL2"] + path
     print(f"-----{prefix}: {path[1:]} (CUSTOM PAYLOAD)---------")
     print(f"Proxying request to: {url}")
@@ -128,41 +129,85 @@ def _custom_proxy_request(path, data_payload, prefix=""):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     
     try:
-        # Use requests.post directly with the custom data payload
-        r = requests.post(url, headers=headers, data=data_payload, verify=False, timeout=30)
-            
-        response_content = r.content
+        # *** REPLACE THIS WITH YOUR REAL requests.post CALL ***
+        # r = requests.post(url, headers=headers, data=data_payload, verify=False, timeout=30)
+        # response_content = r.content
+        # r_status_code = r.status_code
+        
+        # --- MOCKING a successful response that needs patching (For testing patches only) ---
+        r_status_code = 200
+        response_content = b"""
+        <html>
+        <head>
+            <!-- Original: window.top.location.href='https://devlinkv3.paydee.co/redirect' -->
+            <script>window.top.location.href='https://devlinkv3.paydee.co/redirect'</script>
+        </head>
+        <body>
+            <!-- Original: target="_top" -->
+            <form method="POST" action="https://devlinkv3.paydee.co/redirect" target="_top">
+                <input type="submit" value="Continue">
+            </form>
+        </body>
+        </html>
+        """
+        # --- END MOCKING ---
 
-
-        print("--- DEBUG: FULL CONTENT FOR /mpigw/fpx/init RESPONSE ---")
-        # Decode the content to print the URL string clearly
+        print("--- DEBUG: FULL CONTENT FOR /fpx/init RESPONSE (Before Patch) ---")
         print(response_content.decode('utf-8', errors='ignore'))
-        print("-----------------------------------------------")
+        print("-------------------------------------------------------------------")
 
-        # === START: CONTENT PATCHING (CRITICAL) ===
-        # The patching logic must be included here to handle redirects from the target server
+        # === START: CONTENT PATCHING (CRITICAL FIXES) ===
+        
+        # 4. CRITICAL: Prevent cross-origin navigation blocks by forcing the navigation 
+        #    to happen within the current frame (iframe).
+        
+        # Patch 1: Change form target="_top" to target="_self"
+        if b'target="_top"' in response_content:
+            print("--- PATCH: Changing target=\"_top\" to target=\"_self\" ---")
+            response_content = response_content.replace(b'target="_top"', b'target="_self"')
 
+        # Patch 2: Change JavaScript window.top.location redirects to window.self.location
+        # We check for both 'top' and 'parent' location manipulators
+        if b'window.top.location' in response_content or b'window.parent.location' in response_content:
+            print("--- PATCH: Changing window.top/parent.location to window.self.location ---")
+            response_content = response_content.replace(b'window.top.location', b'window.self.location')
+            response_content = response_content.replace(b'window.parent.location', b'window.self.location')
+            
+        # 5. CRITICAL: REROUTE 404 URL TO LOCAL PROXY.
+        REMOTE_REDIRECT_URL = b'https://devlinkv3.paydee.co/redirect' 
+        LOCAL_REDIRECT_PATH = b'/mpigw/payment-status/redirect' 
+        
+        if REMOTE_REDIRECT_URL in response_content:
+            print(f"--- PATCH: Rewriting 404 redirect URL from {REMOTE_REDIRECT_URL} to {LOCAL_REDIRECT_PATH} ---")
+            response_content = response_content.replace(REMOTE_REDIRECT_URL, LOCAL_REDIRECT_PATH)
+
+
+        # The rest of your domain patching:
+        
         # 1. 3DS Domain Patching (if applicable)
         REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
         LOCAL_3DS_PREFIX = b'/mock/3ds'
-        # if REMOTE_3DS_PREFIX in response_content:
-        #     response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
+        if REMOTE_3DS_PREFIX in response_content:
+            print("--- PATCH: 3DS Domain Fix Applied ---")
+            response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
 
         # 2. MPI Domain Patching
         REMOTE_MPI_DOMAIN = app.config["REMOTE_MPI_DOMAIN"].encode('utf-8')
         LOCAL_ROOT_PATH = b'/'
-        # if REMOTE_MPI_DOMAIN in response_content:
-        #      response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
+        if REMOTE_MPI_DOMAIN in response_content:
+            print("--- PATCH: MPI Domain Fix Applied ---")
+            response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
 
         # 3. Webhook Patching (The final redirect URL)
         DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
         LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
-        # if DEFAULT_WEBHOOK in response_content:
-        #     response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
+        if DEFAULT_WEBHOOK in response_content:
+            print("--- PATCH: Default Webhook Fix Applied ---")
+            response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
         # === END: CONTENT PATCHING ===
             
-        print(f"--- Response: {r.status_code} ---")
-        return Response(response_content, status=r.status_code)
+        print(f"--- Response: {r_status_code} ---")
+        return Response(response_content, status=r_status_code)
             
     except Exception as e:
         error = str(e)
@@ -170,60 +215,108 @@ def _custom_proxy_request(path, data_payload, prefix=""):
         return Response(error, status=500)
 
 
+#------------------------
+# NEW LOCAL HANDLER FUNCTION (Handles the local form post and calls the proxy)
+#------------------------
+@app.route('/mpigw/fpx/submit', methods=['POST'])
+def handle_local_fpx_submit():
+    """
+    Receives the payment initiation payload from the auto-submitting form 
+    and proxies it to the external /fpx/init or /wallet/init endpoint.
+    """
+    print("--- NEW ROUTE: /mpigw/fpx/submit received local form data ---")
+    data_payload = dict(request.form)
+    
+    # Determine the target path based on channel name from the payload
+    channel_name = data_payload.get('PAG_CHANNEL_NAME', 'Public Bank').upper()
+    
+    if channel_name in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
+        target_endpoint_path = "mpigw/wallet/init"
+    else:
+        target_endpoint_path = "mpigw/fpx/init"
+        
+    # Call the proxy function to hit the remote server and apply patches
+    return _custom_proxy_request(target_endpoint_path, data_payload, prefix="local_submit")
 
 
-# --- UPDATED /mock/mpReq ROUTE ---
+#------------------------
+# MOCK ROUTES (Updated to initiate the local form post)
+#------------------------
 @app.route('/pag/mpReq', methods=['GET', 'POST'])
 @app.route('/mock/mpReq', methods=['GET', 'POST'])
 def mock_mpreq():
     """
-    Handles the mock flow: 
-    1. Proxies mercReq (transaction registration) using original data.
-    2. Assumes success and constructs a new payload for fpx/init.
-    3. Proxies the fpx/init request using the custom payload and returns the final response.
+    Handles the mock flow (mercReq -> local form post -> fpx/wallet init).
     """
-    print(f" ==== mpReq === \n")
     
-    # 1. Capture the original request data before it's used by the first proxy call.
-    # This data contains critical fields like MPI_MERC_ID and MPI_EMAIL.
     original_data = dict(request.form)
-    print(f"debug {original_data}")
-
-
-    # Get the payment channel ID and standardize it for comparison
     channel_id = original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank').upper()
+    
     if channel_id in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
-        target_endpoint_path = "mpigw/wallet/init"
+        # target_endpoint_path is no longer needed here, but channel_name is for payload
+        default_channel_name = channel_id
     else:
-        target_endpoint_path = "mpigw/fpx/init"
+        default_channel_name = channel_id
 
-
+    # 1. Proxies mercReq
     ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
-    # Check the result of the mercReq proxy call (New requirement implemented here)
-    # if ret.get('status') != 200:
-    #     print(f"ERROR: mercReq failed with response: {ret}")
-    #     # Fail early and return an error response
-    #     # In a real app, you would render a user-friendly error page.
-    #     error_message = ret.get('message', 'Transaction registration failed due to unknown error.')
-    #     return f"Transaction Registration Failed: {error_message}", 500
 
+    # Check the result of the mercReq proxy call using the Response object's .status_code
+    if ret.status_code != 200: 
+        error_message = ret.get_data(as_text=True) 
+        return Response(f"Transaction Registration Failed: {error_message}", status=ret.status_code)
 
-
-
-    # 3. Construct the data payload for fpx/init
-    # This payload is for the second request, which initiates the bank selection screen.
+    # 2. Construct initiation payload (The data we want to post to /fpx/init)
     fpx_data_payload = {
-        # Copied/Derived from the incoming request (mercReq)
         "PAG_MERCHANT_ID": original_data.get('MPI_MERC_ID', '000000000000033'),
         "PAG_CUST_EMAIL": original_data.get('MPI_EMAIL', 'test@example.com'),
         "PAG_TRANS_ID": original_data.get('MPI_TRXN_ID', 'mdl_default_id'),
-        "PAG_CHANNEL_NAME": original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank'), 
+        "PAG_CHANNEL_NAME": default_channel_name,
         "PAG_ORDER_DETAIL": "PAG Merchant Order",
-        "PAG_MAC": "Some-Random-MAC-String-For-FPX", # Placeholder MAC for FPX
+        "PAG_MAC": "Some-Random-MAC-String-For-FPX", 
+        # Add all required parameters here
     }
     
-    return _custom_proxy_request(target_endpoint_path, fpx_data_payload, prefix="mock")
-
+    # 3. Generate an auto-submitting HTML form to POST the fpx_data_payload to the local handler
+    hidden_inputs = ''.join(
+        f'<input type="hidden" name="{k}" value="{v}">' 
+        for k, v in fpx_data_payload.items()
+    )
+    
+    form_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Processing Payment...</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {{ font-family: sans-serif; text-align: center; padding-top: 50px; }}
+            .loader {{ border: 16px solid #f3f3f3; border-top: 16px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: 20px auto; }}
+            @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+        </style>
+    </head>
+    <body onload="document.forms[0].submit()">
+        <h2>Redirecting to Payment Gateway...</h2>
+        <div class="loader"></div>
+        <p>If you are not automatically redirected, please click the button below.</p>
+        <form method="post" action="/mpigw/fpx/submit" target="_self">
+            {hidden_inputs}
+            <button type="submit">Continue to Payment</button>
+        </form>
+        <script>
+            // Fallback to ensure form is submitted even if onload fails
+            setTimeout(function() {{
+                if (document.forms.length > 0) {{
+                    document.forms[0].submit();
+                }}
+            }}, 100); 
+        </script>
+    </body>
+    </html>
+    """
+    
+    print("--- DEBUG: Returning Auto-Submit Form HTML ---")
+    return Response(form_html, mimetype='text/html')
 # 
 @app.route('/pag/mercReq', methods=['GET', 'POST'])
 @app.route('/mock/mercReq', methods=['GET', 'POST'])

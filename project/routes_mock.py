@@ -163,10 +163,10 @@ def _custom_proxy_request(path, data_payload, prefix=""):
         # === END: CONTENT PATCHING ===
             
         # 4. Replace target=top
-        OLD_TARGET = b'target="_top"'
-        NEW_TARGET = b''
-        if OLD_TARGET in response_content:
-            response_content = response_content.replace(OLD_TARGET, NEW_TARGET)
+        # OLD_TARGET = b'target="_top"'
+        # NEW_TARGET = b''
+        # if OLD_TARGET in response_content:
+        #     response_content = response_content.replace(OLD_TARGET, NEW_TARGET)
 
 
         print(f"--- Response: {r.status_code} ---")

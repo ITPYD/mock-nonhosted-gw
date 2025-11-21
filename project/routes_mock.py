@@ -248,58 +248,31 @@ def handle_local_fpx_submit():
     # the Response containing the patched content from the external gateway.
     return _custom_proxy_request(target_endpoint_path, data_payload, prefix="local_submit")
 
-
 #------------------------
-# MOCK ROUTES (Updated to initiate the local form post)
+# NEW REDIRECT HANDLER
 #------------------------
-@app.route('/pag/mpReq', methods=['GET', 'POST'])
-@app.route('/mock/mpReq', methods=['GET', 'POST'])
-def mock_mpreq():
+@app.route('/redirect', methods=['GET'])
+def redirect_handler():
     """
-    Handles the mock flow (mercReq -> local form post -> fpx/wallet init).
+    Receives the payment initiation payload via query parameters and displays 
+    the auto-submitting form to post to the external /mpigw/fpx/init endpoint.
+    
+    NOTE: This bypasses the local proxy and content patching, forcing the 
+    browser to navigate to the external payment page.
     """
+    print("--- NEW ROUTE: /redirect received payment payload in query params ---")
+    # Query arguments contain the payload passed from mock_mpreq (all data fields)
+    fpx_data_payload = dict(request.args)
     
-    original_data = dict(request.form)
-    # Get the channel ID from original data, retaining its casing.
-    channel_id = original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank')
-    
-    # Use the uppercase version for internal comparison logic (Fpx vs Wallet)
-    channel_id_upper = channel_id.upper()
-    
-    if channel_id_upper in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
-        # If it's a wallet, use the original (Camel Case) name for the payload
-        default_channel_name = channel_id 
-    else:
-        # If it's an FPX bank, use the original (Camel Case) name for the payload
-        default_channel_name = channel_id
-
-    # 1. Proxies mercReq
-    ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
-
-    # Check the result of the mercReq proxy call using the Response object's .status_code
-    if ret.status_code != 200: 
-        error_message = ret.get_data(as_text=True) 
-        return Response(f"Transaction Registration Failed: {error_message}", status=ret.status_code)
-
-    # 2. Construct initiation payload (The data we want to post to /fpx/init)
-    fpx_data_payload = {
-        "PAG_MERCHANT_ID": original_data.get('MPI_MERC_ID', '000000000000033'),
-        # Note: If MPI_EMAIL is present but empty, it will result in an empty string, which the API might not like.
-        "PAG_CUST_EMAIL": original_data.get('MPI_EMAIL', 'test@example.com'),
-        "PAG_TRANS_ID": original_data.get('MPI_TRXN_ID', 'mdl_default_id'),
-        # CRITICAL FIX: Use the original casing for the payment channel name in the payload
-        "PAG_CHANNEL_NAME": default_channel_name,
-        "PAG_ORDER_DETAIL": "PAG Merchant Order",
-        "PAG_MAC": "Some-Random-MAC-String-For-FPX", 
-        # Add all required parameters here
-    }
-    
-    # 3. Generate an auto-submitting HTML form to POST the fpx_data_payload to the local handler
     hidden_inputs = ''.join(
         f'<input type="hidden" name="{k}" value="{v}">' 
         for k, v in fpx_data_payload.items()
     )
     
+    # Set the external URL for direct submission
+    EXTERNAL_INIT_URL = "https://devlinkv2.paydee.co/mpigw/fpx/init"
+    
+    # Generate the auto-submitting HTML form to POST the fpx_data_payload to the external endpoint
     form_html = f"""
     <!DOCTYPE html>
     <html>
@@ -316,7 +289,7 @@ def mock_mpreq():
         <h2>Redirecting to Payment Gateway...</h2>
         <div class="loader"></div>
         <p>If you are not automatically redirected, please click the button below.</p>
-        <form method="post" action="https://devlinkv2.paydee.co/mpigw/fpx/init" target="_self">
+        <form method="post" action="{EXTERNAL_INIT_URL}" target="_top">
             {hidden_inputs}
             <button type="submit">Continue to Payment</button>
         </form>
@@ -332,8 +305,79 @@ def mock_mpreq():
     </html>
     """
     
-    print("--- DEBUG: Returning Auto-Submit Form HTML ---")
+    print("--- DEBUG: Returning Auto-Submit Form HTML from /redirect, targeting external FPX init ---")
     return Response(form_html, mimetype='text/html')
+
+
+#------------------------
+# MOCK ROUTES (Updated to initiate the local form post)
+#------------------------
+@app.route('/pag/mpReq', methods=['GET', 'POST'])
+@app.route('/mock/mpReq', methods=['GET', 'POST'])
+def mock_mpreq():
+    """
+    Handles the mock flow (mercReq -> local redirect -> /redirect -> fpx/wallet init).
+    """
+    
+    original_data = dict(request.form)
+    # Get the channel ID from original data, retaining its casing.
+    channel_id = original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank')
+    
+    # Use the uppercase version for internal comparison logic (Fpx vs Wallet)
+    channel_id_upper = channel_id.upper()
+    
+    if channel_id_upper in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
+        default_channel_name = channel_id 
+    else:
+        default_channel_name = channel_id
+
+    # 1. Proxies mercReq
+    ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
+
+    # Check the result of the mercReq proxy call using the Response object's .status_code
+    if ret.status_code != 200: 
+        error_message = ret.get_data(as_text=True) 
+        return Response(f"Transaction Registration Failed: {error_message}", status=ret.status_code)
+
+    # 2. Construct initiation payload (Merge original data and new PAG fields)
+    
+    # Start the payload with ALL original form data
+    redirect_payload = dict(original_data)
+    
+    # Overwrite/Add the specific fields required for the next proxy hop (/fpx/init)
+    # This ensures that even if 'MPI_MERC_ID' was missing, 'PAG_MERCHANT_ID' is still set.
+    redirect_payload.update({
+        "PAG_MERCHANT_ID": original_data.get('MPI_MERC_ID', '000000000000033'),
+        "PAG_CUST_EMAIL": original_data.get('MPI_EMAIL', 'test@example.com'),
+        "PAG_TRANS_ID": original_data.get('MPI_TRXN_ID', 'mdl_default_id'),
+        "PAG_CHANNEL_NAME": default_channel_name,
+        "PAG_ORDER_DETAIL": "PAG Merchant Order",
+        "PAG_MAC": "Some-Random-MAC-String-For-FPX", 
+        # Any other hardcoded fields for the /fpx/submit stage should go here
+    })
+    
+    # 3. Redirect to /redirect with payload parameters as query strings
+    # All fields from the combined payload are passed via the query string.
+    query_params = '&'.join(f'{k}={v}' for k, v in redirect_payload.items())
+    redirect_url = f'/redirect?{query_params}'
+
+    # Return a simple HTML response that forces a top-level redirection to /redirect
+    redirect_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Redirecting to Payment...</title>
+        <meta http-equiv="refresh" content="0; url={redirect_url}">
+    </head>
+    <body>
+        <p>Redirecting... <a href="{redirect_url}">Click here if not redirected.</a></p>
+    </body>
+    </html>
+    """
+    
+    print(f"--- DEBUG: Returning Redirection to {redirect_url} (including all form data) ---")
+    return Response(redirect_html, mimetype='text/html')
+
 
 @app.route('/pag/mercReq', methods=['GET', 'POST'])
 @app.route('/mock/mercReq', methods=['GET', 'POST'])

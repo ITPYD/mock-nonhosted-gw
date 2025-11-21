@@ -353,7 +353,7 @@ def mock_mpreq():
     
     if channel_id_upper in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
         default_channel_name = channel_id 
-        ext_url = f"{EXTERNAL_INIT_URL}/wallet/init"
+        ext_url = f"{EXTERNAL_INIT_URL}/ewallets/init"
     else:
         default_channel_name = channel_id
         ext_url = f"{EXTERNAL_INIT_URL}/fpx/init"

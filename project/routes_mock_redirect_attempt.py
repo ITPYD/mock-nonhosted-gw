@@ -316,7 +316,8 @@ def redirect_handler():
 @app.route('/mock/mpReq', methods=['GET', 'POST'])
 def mock_mpreq():
     """
-    Handles the mock flow (mercReq -> local redirect -> /redirect -> fpx/wallet init).
+    Handles the mock flow (mercReq -> return manual click-through form posting 
+    directly to external /fpx/init with target="_top").
     """
     
     original_data = dict(request.form)
@@ -356,27 +357,56 @@ def mock_mpreq():
         # Any other hardcoded fields for the /fpx/submit stage should go here
     })
     
-    # 3. Redirect to /redirect with payload parameters as query strings
-    # All fields from the combined payload are passed via the query string.
-    query_params = '&'.join(f'{k}={v}' for k, v in redirect_payload.items())
-    redirect_url = f'/redirect?{query_params}'
+    # Create hidden inputs from the payload
+    hidden_inputs = ''.join(
+        f'<input type="hidden" name="{k}" value="{v}">' 
+        for k, v in redirect_payload.items()
+    )
 
-    # Return a simple HTML response that forces a top-level redirection to /redirect
-    redirect_html = f"""
+    # 3. Define the external endpoint and generate the manual click form
+    EXTERNAL_INIT_URL = app.config["EXTERNAL_INIT_URL"]
+    
+    # Generate the manual click HTML form to POST the fpx_data_payload to the external endpoint
+    form_html = f"""
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Redirecting to Payment...</title>
-        <meta http-equiv="refresh" content="0; url={redirect_url}">
+        <title>Processing Payment...</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {{ font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #f7f7f7; }}
+            .card {{ background-color: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }}
+            h2 {{ color: #333; margin-bottom: 20px; }}
+            p {{ color: #555; margin-bottom: 25px; }}
+            button {{ 
+                padding: 12px 25px; 
+                font-size: 16px; 
+                cursor: pointer; 
+                background-color: #3498db; 
+                color: white; 
+                border: none; 
+                border-radius: 8px;
+                transition: background-color 0.3s;
+            }}
+            button:hover {{ background-color: #2980b9; }}
+        </style>
     </head>
     <body>
-        <p>Redirecting... <a href="{redirect_url}">Click here if not redirected.</a></p>
+        <div class="card">
+            <h2>Payment Redirection Required</h2>
+            <p>Your browser requires a manual step to securely load the external payment gateway in the main window.</p>
+            <form method="post" action="{EXTERNAL_INIT_URL}" target="_top">
+                {hidden_inputs}
+                <button type="submit">Continue to Payment Gateway</button>
+            </form>
+            <p style="margin-top: 25px; font-size: 0.8em; color: #777;">(This action will navigate away from the current page.)</p>
+        </div>
     </body>
     </html>
     """
     
-    print(f"--- DEBUG: Returning Redirection to {redirect_url} (including all form data) ---")
-    return Response(redirect_html, mimetype='text/html')
+    print(f"--- DEBUG: Returning Manual Click Form posting directly to {EXTERNAL_INIT_URL} with target=_top ---")
+    return Response(form_html, mimetype='text/html')
 
 
 @app.route('/pag/mercReq', methods=['GET', 'POST'])

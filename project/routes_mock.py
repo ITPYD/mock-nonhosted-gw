@@ -113,7 +113,162 @@ def _proxy_request(path, content_type, prefix=""):
 # MOCK ROUTES (API ENDPOINTS)
 #------------------------
 
+# def _custom_proxy_request(path, data_payload, prefix=""):
+#     """
+#     HITS the REMOTE MPI SERVER for /fpx/init or /wallet/init.
+#     CRITICAL: It applies content patches and strips frame-busting headers 
+#     to ensure the response HTML works inside an iframe.
+#     The final Response object containing the patched HTML is returned.
+#     """
+#     # Using app.config["MPI_URL2"] as per your provided code
+#     url = app.config["MPI_URL2"] + path
+#     print(f"-----{prefix}: {path[1:]} (CUSTOM PAYLOAD)---------")
+#     print(f"Proxying request to: {url}")
+#     print(f"Custom data payload: {data_payload}")
+    
+#     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    
+#     # --- CRITICAL: REAL API CALL IS NOW ACTIVE ---
+#     try:
+#         # --- START REAL API CALL ---
+#         print("--- EXECUTING REAL requests.post TO EXTERNAL GATEWAY ---")
+#         r = requests.post(url, headers=headers, data=data_payload, verify=False, timeout=30)
+#         response_content = r.content
+#         r_status_code = r.status_code
+#         # --- END REAL API CALL ---
 
+#         # === START: HEADER STRIPPING AND CONTENT PATCHING (CRITICAL FIXES) ===
+
+#         # 0. HEADER STRIPPING (To prevent external frame-breaking)
+#         response_headers = dict(r.headers)
+        
+#         # Headers to strip because they prevent iframe loading
+#         headers_to_strip = [
+#             'X-Frame-Options', 
+#             'Strict-Transport-Security'
+#         ]
+        
+#         for header in headers_to_strip:
+#             if header.lower() in [k.lower() for k in response_headers.keys()]:
+#                 # Find the actual case-sensitive key and remove it
+#                 key_to_remove = next(k for k in response_headers.keys() if k.lower() == header.lower())
+#                 print(f"--- STRIPPING HEADER: {key_to_remove} ---")
+#                 response_headers.pop(key_to_remove, None)
+                
+#         # Handle specific CSP directives if Content-Security-Policy exists
+#         csp_key = next((k for k in response_headers.keys() if k.lower() == 'content-security-policy'), None)
+
+#         if csp_key:
+#             csp = response_headers[csp_key]
+#             if 'frame-ancestors' in csp:
+#                 # Attempt to remove frame-ancestors directive
+#                 csp_parts = [p for p in csp.split(';') if 'frame-ancestors' not in p.strip()]
+#                 new_csp = '; '.join(csp_parts).strip()
+#                 response_headers[csp_key] = new_csp
+#                 print("--- CSP PATCH: Removed frame-ancestors directive ---")
+
+        
+#         print("--- DEBUG: FULL CONTENT FOR /fpx/init RESPONSE (Before Patch) ---")
+#         print(response_content.decode('utf-8', errors='ignore'))
+#         print("-------------------------------------------------------------------")
+
+#         # Define domains to be replaced
+#         REMOTE_DOMAIN_V3 = b'https://devlinkv3.paydee.co'
+#         LOCAL_HOST_PREFIX = b'/' 
+        
+#         # Patch 6: CRITICAL FPX Submit Action Reroute (to handle the final CSP break)
+#         FPX_EXTERNAL_ACTION = b'https://uat.mepsfpx.com.my/FPXMain/seller2DReceiver.jsp'
+#         FPX_LOCAL_ACTION = b'/mpigw/fpx/mepsfpx_submit'
+#         if FPX_EXTERNAL_ACTION in response_content:
+#             print(f"--- PATCH: Rewriting FPX Form action from {FPX_EXTERNAL_ACTION.decode()} to {FPX_LOCAL_ACTION.decode()} ---")
+#             response_content = response_content.replace(FPX_EXTERNAL_ACTION, FPX_LOCAL_ACTION)
+
+#         # 4. CRITICAL: Fix for Cross-Origin Navigation
+#         force_top = data_payload.get('FORCE_TARGET_TOP') == '1'
+        
+#         # Patch 1: Change form target="_top" to target="_self" (Conditional)
+#         if b'target="_top"' in response_content:
+#             if not force_top:
+#                 print("--- PATCH: Changing target=\"_top\" to target=\"_self\" ---")
+#                 response_content = response_content.replace(b'target="_top"', b'target="_self"')
+#             else:
+#                 print("--- OVERRIDE: FORCE_TARGET_TOP=1 is set. Retaining target=\"_top\" in external response. ---")
+
+
+#         # Patch 2: Change JavaScript window.top/parent.location redirects to window.self.location
+#         if b'window.top.location' in response_content or b'window.parent.location' in response_content:
+#             print("--- PATCH: Changing window.top/parent.location to window.self.location ---")
+#             response_content = response_content.replace(b'window.top.location', b'window.self.location')
+#             response_content = response_content.replace(b'window.parent.location', b'window.self.location')
+            
+#         # 5. CRITICAL: REROUTE ALL EXTERNAL HOST REFERENCES to LOCAL HOST (The most robust fix)
+#         # This fixes the 404 (by rerouting /redirect) AND fixes broken asset links (CSS/JS/images).
+#         if REMOTE_DOMAIN_V3 in response_content:
+#             print(f"--- PATCH: Rewriting ALL {REMOTE_DOMAIN_V3.decode()} to {LOCAL_HOST_PREFIX.decode()} ---")
+#             # This handles /redirect, /resources, /img, etc.
+#             response_content = response_content.replace(REMOTE_DOMAIN_V3, LOCAL_HOST_PREFIX)
+
+#         # The rest of your domain patching (retained for specific cases):
+        
+#         # 1. 3DS Domain Patching (if applicable)
+#         REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
+#         LOCAL_3DS_PREFIX = b'/mock/3ds'
+#         if REMOTE_3DS_PREFIX in response_content:
+#             print("--- PATCH: 3DS Domain Fix Applied ---")
+#             response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
+
+#         # 2. MPI Domain Patching
+#         REMOTE_MPI_DOMAIN = app.config["REMOTE_MPI_DOMAIN"].encode('utf-8')
+#         LOCAL_ROOT_PATH = b'/'
+#         if REMOTE_MPI_DOMAIN in response_content and REMOTE_MPI_DOMAIN != REMOTE_DOMAIN_V3:
+#             print("--- PATCH: Secondary MPI Domain Fix Applied ---")
+#             response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
+
+#         # 3. Webhook Patching (The final redirect URL) - May be covered by Patch 5, but kept for specificity
+#         DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
+#         LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
+#         if DEFAULT_WEBHOOK in response_content:
+#             print("--- PATCH: Default Webhook Fix Applied ---")
+#             response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
+            
+#         # Patch 7: CRITICAL: Force immediate submission if a form exists (to bypass confirmation modals/popups)
+#         if b'<form' in response_content:
+#             print("--- PATCH: Injecting force submit script to bypass potential confirmation popups ---")
+            
+#             # We will inject a script to execute the form submit slightly delayed, 
+#             # ensuring it runs after the original onload/onclick handlers are set up.
+#             force_submit_script = b'<script>setTimeout(function(){ if(document.forms.length > 0) { document.forms[0].submit(); console.log("Form auto-submitted by proxy patch."); } }, 50);</script>'
+            
+#             # Use lower() on response_content for case-insensitive replacement
+#             # Replace only the first instance to ensure we place it right before the end of the body
+#             content_lower = response_content.lower()
+#             if b'</body>' in content_lower:
+#                 # Find the position of </body> in the original content (case-sensitive)
+#                 # To avoid issues with mixed case content, we use the original content for replacement
+#                 body_end_index = content_lower.rfind(b'</body>')
+#                 if body_end_index != -1:
+#                     response_content = (
+#                         response_content[:body_end_index] + 
+#                         force_submit_script + 
+#                         response_content[body_end_index:]
+#                     )
+#             else:
+#                 # Fallback: append to the end
+#                 response_content += force_submit_script
+
+
+#         # === END: CONTENT PATCHING ===
+            
+#         print(f"--- Response: {r_status_code} ---")
+#         return Response(response_content, 
+#                         status=r_status_code, 
+#                         headers=response_headers, # Include custom headers
+#                         mimetype=r.headers.get('content-type', 'text/html')) # <--- Updated return
+            
+#     except Exception as e:
+#         error = str(e)
+#         print(f"--- Proxy Error --- \n{error}")
+#         return Response(error, status=500)
 
 # --- NEW HELPER FUNCTION FOR CUSTOM PAYLOADS ---
 def _custom_proxy_request(path, data_payload, prefix=""):

@@ -341,7 +341,9 @@ def mock_mpreq():
     Handles the mock flow (mercReq -> return manual click-through form posting 
     directly to external /fpx/init with target="_top").
     """
-    
+    # 3. Define the external endpoint and generate the manual click form
+    EXTERNAL_INIT_URL = app.config["EXTERNAL_INIT_URL"]
+
     original_data = dict(request.form)
     # Get the channel ID from original data, retaining its casing.
     channel_id = original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank')
@@ -351,8 +353,10 @@ def mock_mpreq():
     
     if channel_id_upper in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
         default_channel_name = channel_id 
+        ext_url = "{EXTERNAL_INIT_URL}/wallet/init"
     else:
         default_channel_name = channel_id
+        ext_url = "{EXTERNAL_INIT_URL}/fpx/init"
 
     # 1. Proxies mercReq
     ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
@@ -385,8 +389,7 @@ def mock_mpreq():
         for k, v in redirect_payload.items()
     )
 
-    # 3. Define the external endpoint and generate the manual click form
-    EXTERNAL_INIT_URL = app.config["EXTERNAL_INIT_URL"]
+
     
     # Generate the manual click HTML form to POST the fpx_data_payload to the external endpoint
     form_html = f"""
@@ -417,7 +420,7 @@ def mock_mpreq():
         <div class="card">
             <h2>Payment Redirection Required</h2>
             <p>Your browser requires a manual step to securely load the external payment gateway in the main window.</p>
-            <form method="post" action="{EXTERNAL_INIT_URL}" target="_top">
+            <form method="post" action="{ext_url}" target="_top">
                 {hidden_inputs}
                 <button type="submit">Continue to Payment Gateway</button>
             </form>
@@ -427,7 +430,7 @@ def mock_mpreq():
     </html>
     """
     
-    print(f"--- DEBUG: Returning Manual Click Form posting directly to {EXTERNAL_INIT_URL} with target=_top ---")
+    print(f"--- DEBUG: Returning Manual Click Form posting directly to {ext_url} with target=_top ---")
     return Response(form_html, mimetype='text/html')
 
 # 

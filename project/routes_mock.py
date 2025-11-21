@@ -117,8 +117,11 @@ def _proxy_request(path, content_type, prefix=""):
 # CORE PROXY FUNCTION (CUSTOM PAYLOAD) - HITS EXTERNAL MPI SERVER
 #------------------------
 def _custom_proxy_request(path, data_payload, prefix=""):
+def _custom_proxy_request(path, data_payload, prefix=""):
     """
-    HITS THE REMOTE MPI SERVER for /fpx/init or /wallet/init and applies content patches.
+    HITS the REMOTE MPI SERVER for /fpx/init or /wallet/init.
+    CRITICAL: It applies content patches to ensure the response HTML works inside an iframe.
+    The final Response object containing the patched HTML is returned.
     """
     # Using app.config["MPI_URL2"] as per your provided code
     url = app.config["MPI_URL2"] + path
@@ -128,28 +131,33 @@ def _custom_proxy_request(path, data_payload, prefix=""):
     
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     
+    # --- CRITICAL: REAL API CALL IS NOW ACTIVE ---
     try:
-        # *** REPLACE THIS WITH YOUR REAL requests.post CALL ***
-        # r = requests.post(url, headers=headers, data=data_payload, verify=False, timeout=30)
-        # response_content = r.content
-        # r_status_code = r.status_code
+        # --- START REAL API CALL ---
+        print("--- EXECUTING REAL requests.post TO EXTERNAL GATEWAY ---")
+        r = requests.post(url, headers=headers, data=data_payload, verify=False, timeout=30)
+        response_content = r.content
+        r_status_code = r.status_code
+        # --- END REAL API CALL ---
         
-        # --- MOCKING a successful response that needs patching (For testing patches only) ---
-        r_status_code = 200
-        response_content = b"""
-        <html>
-        <head>
-            <!-- Original: window.top.location.href='https://devlinkv3.paydee.co/redirect' -->
-            <script>window.top.location.href='https://devlinkv3.paydee.co/redirect'</script>
-        </head>
-        <body>
-            <!-- Original: target="_top" -->
-            <form method="POST" action="https://devlinkv3.paydee.co/redirect" target="_top">
-                <input type="submit" value="Continue">
-            </form>
-        </body>
-        </html>
-        """
+        # --- MOCKING: CONTENT COMMENTED OUT. Use the block below if the real API call is commented above ---
+        # r_status_code = 200
+        # response_content = b"""
+        # <html>
+        # <head>
+        #     <!-- Example of external redirect that must be rerouted -->
+        #     <script>window.top.location.href='https://devlinkv3.paydee.co/redirect'</script>
+        #     <script>document.location.href='https://devlinkv3.paydee.co/resources/logo.png'</script>
+        # </head>
+        # <body>
+        #     <!-- Example of external form that must be patched -->
+        #     <form method="POST" action="https://devlinkv3.paydee.co/redirect" target="_top">
+        #         <input type="submit" value="Continue">
+        #     </form>
+        #     <img src="https://devlinkv3.paydee.co/img/bank.gif" />
+        # </body>
+        # </html>
+        # """
         # --- END MOCKING ---
 
         print("--- DEBUG: FULL CONTENT FOR /fpx/init RESPONSE (Before Patch) ---")
@@ -158,31 +166,31 @@ def _custom_proxy_request(path, data_payload, prefix=""):
 
         # === START: CONTENT PATCHING (CRITICAL FIXES) ===
         
-        # 4. CRITICAL: Prevent cross-origin navigation blocks by forcing the navigation 
-        #    to happen within the current frame (iframe).
+        # Define domains to be replaced
+        REMOTE_DOMAIN_V3 = b'https://devlinkv3.paydee.co'
+        LOCAL_HOST_PREFIX = b'/' # Assumes your proxy root is where you want to route resources
+
+        # 4. CRITICAL: Fix for Cross-Origin Navigation
         
         # Patch 1: Change form target="_top" to target="_self"
         if b'target="_top"' in response_content:
             print("--- PATCH: Changing target=\"_top\" to target=\"_self\" ---")
             response_content = response_content.replace(b'target="_top"', b'target="_self"')
 
-        # Patch 2: Change JavaScript window.top.location redirects to window.self.location
-        # We check for both 'top' and 'parent' location manipulators
+        # Patch 2: Change JavaScript window.top/parent.location redirects to window.self.location
         if b'window.top.location' in response_content or b'window.parent.location' in response_content:
             print("--- PATCH: Changing window.top/parent.location to window.self.location ---")
             response_content = response_content.replace(b'window.top.location', b'window.self.location')
             response_content = response_content.replace(b'window.parent.location', b'window.self.location')
             
-        # 5. CRITICAL: REROUTE 404 URL TO LOCAL PROXY.
-        REMOTE_REDIRECT_URL = b'https://devlinkv3.paydee.co/redirect' 
-        LOCAL_REDIRECT_PATH = b'/mpigw/payment-status/redirect' 
-        
-        if REMOTE_REDIRECT_URL in response_content:
-            print(f"--- PATCH: Rewriting 404 redirect URL from {REMOTE_REDIRECT_URL} to {LOCAL_REDIRECT_PATH} ---")
-            response_content = response_content.replace(REMOTE_REDIRECT_URL, LOCAL_REDIRECT_PATH)
+        # 5. CRITICAL: REROUTE ALL EXTERNAL HOST REFERENCES to LOCAL HOST (The most robust fix)
+        # This fixes the 404 (by rerouting /redirect) AND fixes broken asset links (CSS/JS/images).
+        if REMOTE_DOMAIN_V3 in response_content:
+            print(f"--- PATCH: Rewriting ALL {REMOTE_DOMAIN_V3.decode()} to {LOCAL_HOST_PREFIX.decode()} ---")
+            # This handles /redirect, /resources, /img, etc.
+            response_content = response_content.replace(REMOTE_DOMAIN_V3, LOCAL_HOST_PREFIX)
 
-
-        # The rest of your domain patching:
+        # The rest of your domain patching (retained for specific cases):
         
         # 1. 3DS Domain Patching (if applicable)
         REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
@@ -194,20 +202,21 @@ def _custom_proxy_request(path, data_payload, prefix=""):
         # 2. MPI Domain Patching
         REMOTE_MPI_DOMAIN = app.config["REMOTE_MPI_DOMAIN"].encode('utf-8')
         LOCAL_ROOT_PATH = b'/'
-        if REMOTE_MPI_DOMAIN in response_content:
-            print("--- PATCH: MPI Domain Fix Applied ---")
+        if REMOTE_MPI_DOMAIN in response_content and REMOTE_MPI_DOMAIN != REMOTE_DOMAIN_V3:
+            print("--- PATCH: Secondary MPI Domain Fix Applied ---")
             response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
 
-        # 3. Webhook Patching (The final redirect URL)
+        # 3. Webhook Patching (The final redirect URL) - May be covered by Patch 5, but kept for specificity
         DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
         LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
         if DEFAULT_WEBHOOK in response_content:
             print("--- PATCH: Default Webhook Fix Applied ---")
             response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
+            
         # === END: CONTENT PATCHING ===
             
         print(f"--- Response: {r_status_code} ---")
-        return Response(response_content, status=r_status_code)
+        return Response(response_content, status=r_status_code) # <--- THIS IS THE FINAL RETURN
             
     except Exception as e:
         error = str(e)
@@ -223,6 +232,7 @@ def handle_local_fpx_submit():
     """
     Receives the payment initiation payload from the auto-submitting form 
     and proxies it to the external /fpx/init or /wallet/init endpoint.
+    Calls _custom_proxy_request because it requires a custom payload argument.
     """
     print("--- NEW ROUTE: /mpigw/fpx/submit received local form data ---")
     data_payload = dict(request.form)
@@ -235,7 +245,8 @@ def handle_local_fpx_submit():
     else:
         target_endpoint_path = "mpigw/fpx/init"
         
-    # Call the proxy function to hit the remote server and apply patches
+    # CRITICAL: This is the return of the submit handling: 
+    # the Response containing the patched content from the external gateway.
     return _custom_proxy_request(target_endpoint_path, data_payload, prefix="local_submit")
 
 
@@ -317,7 +328,7 @@ def mock_mpreq():
     
     print("--- DEBUG: Returning Auto-Submit Form HTML ---")
     return Response(form_html, mimetype='text/html')
-# 
+
 @app.route('/pag/mercReq', methods=['GET', 'POST'])
 @app.route('/mock/mercReq', methods=['GET', 'POST'])
 def mock_mercreq():

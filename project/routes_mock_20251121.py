@@ -121,7 +121,6 @@ def _custom_proxy_request(path, data_payload, prefix=""):
     Helper function to proxy requests (POST) with a SPECIFIC custom data payload.
     This bypasses using the global request.form, which is necessary for multi-step processing.
     """
-    # Using app.config["MPI_URL2"] as per your provided code
     url = app.config["MPI_URL2"] + path
     print(f"-----{prefix}: {path[1:]} (CUSTOM PAYLOAD)---------")
     print(f"Proxying request to: {url}")
@@ -130,78 +129,46 @@ def _custom_proxy_request(path, data_payload, prefix=""):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     
     try:
-        # NOTE: In a real environment, requests.post would be used.
-        # r = requests.post(url, headers=headers, data=data_payload, verify=False, timeout=30)
-        # response_content = r.content
-        # r_status_code = r.status_code
-        
-        # --- MOCKING a successful response that needs patching ---
-        r_status_code = 200
-        # Simulating a form that tries to redirect the top window
-        response_content = b"""
-        <html>
-        <head><script>window.top.location.href='/redirect'</script></head>
-        <body>
-            <form method="POST" action="/final_action" target="_top">
-                <input type="submit" value="Continue">
-            </form>
-        </body>
-        </html>
-        """
-        
-        print("--- DEBUG: FULL CONTENT FOR /mpigw/fpx/init RESPONSE (Before Patch) ---")
+        # Use requests.post directly with the custom data payload
+        r = requests.post(url, headers=headers, data=data_payload, verify=False, timeout=30)
+            
+        response_content = r.content
+
+
+        print("--- DEBUG: FULL CONTENT FOR /mpigw/fpx/init RESPONSE ---")
+        # Decode the content to print the URL string clearly
         print(response_content.decode('utf-8', errors='ignore'))
-        print("-------------------------------------------------------------------")
+        print("-----------------------------------------------")
 
-        # === START: CONTENT PATCHING (CRITICAL FIX FOR TOP NAVIGATION) ===
-        
-        # 4. CRITICAL: Prevent cross-origin navigation blocks by forcing the navigation 
-        #    to happen within the current frame (iframe).
-        
-        # Patch 1: Change form target="_top" to target="_self"
-        if b'target="_top"' in response_content:
-            print("--- PATCH: Changing target=\"_top\" to target=\"_self\" ---")
-            response_content = response_content.replace(b'target="_top"', b'target="_self"')
+        # === START: CONTENT PATCHING (CRITICAL) ===
+        # The patching logic must be included here to handle redirects from the target server
 
-        # Patch 2: Change JavaScript window.top.location redirects to window.self.location
-        # We check for both 'top' and 'parent' location manipulators
-        if b'window.top.location' in response_content or b'window.parent.location' in response_content:
-            print("--- PATCH: Changing window.top/parent.location to window.self.location ---")
-            response_content = response_content.replace(b'window.top.location', b'window.self.location')
-            response_content = response_content.replace(b'window.parent.location', b'window.self.location')
-
-        # The rest of your domain patching follows here:
-        
         # 1. 3DS Domain Patching (if applicable)
         REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
         LOCAL_3DS_PREFIX = b'/mock/3ds'
         # if REMOTE_3DS_PREFIX in response_content:
-        #     print("--- PATCH: 3DS Domain Fix Applied ---")
         #     response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
 
         # 2. MPI Domain Patching
         REMOTE_MPI_DOMAIN = app.config["REMOTE_MPI_DOMAIN"].encode('utf-8')
         LOCAL_ROOT_PATH = b'/'
         # if REMOTE_MPI_DOMAIN in response_content:
-        #     print("--- PATCH: MPI Domain Fix Applied ---")
-        #     response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
+        #      response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
 
         # 3. Webhook Patching (The final redirect URL)
         DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
         LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
         # if DEFAULT_WEBHOOK in response_content:
-        #     print("--- PATCH: Default Webhook Fix Applied ---")
         #     response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
         # === END: CONTENT PATCHING ===
             
-        print(f"--- Response: {r_status_code} ---")
-        return Response(response_content, status=r_status_code)
+        print(f"--- Response: {r.status_code} ---")
+        return Response(response_content, status=r.status_code)
             
     except Exception as e:
         error = str(e)
         print(f"--- Proxy Error --- \n{error}")
         return Response(error, status=500)
-
 
 
 # --- UPDATED /mock/mpReq ROUTE ---

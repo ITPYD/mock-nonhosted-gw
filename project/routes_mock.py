@@ -117,7 +117,6 @@ def _proxy_request(path, content_type, prefix=""):
 # CORE PROXY FUNCTION (CUSTOM PAYLOAD) - HITS EXTERNAL MPI SERVER
 #------------------------
 def _custom_proxy_request(path, data_payload, prefix=""):
-def _custom_proxy_request(path, data_payload, prefix=""):
     """
     HITS the REMOTE MPI SERVER for /fpx/init or /wallet/init.
     CRITICAL: It applies content patches to ensure the response HTML works inside an iframe.

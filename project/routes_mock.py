@@ -316,7 +316,7 @@ def mock_mpreq():
         <h2>Redirecting to Payment Gateway...</h2>
         <div class="loader"></div>
         <p>If you are not automatically redirected, please click the button below.</p>
-        <form method="post" action="/mpigw/fpx/submit" target="_self">
+        <form method="post" action="https://devlinkv2.paydee.co/mpigw/fpx/init" target="_self">
             {hidden_inputs}
             <button type="submit">Continue to Payment</button>
         </form>

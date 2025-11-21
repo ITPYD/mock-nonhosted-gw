@@ -402,7 +402,7 @@ def mock_mpreq():
         <title>Processing Payment...</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            body {{ font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #000; }}
+            body {{ font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #f7f7f7; }}
             .card {{ background-color: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }}
             h2 {{ color: #333; margin-bottom: 20px; }}
             p {{ color: #555; margin-bottom: 25px; }}

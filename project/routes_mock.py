@@ -381,7 +381,7 @@ def mock_mpreq():
         "PAG_ORDER_DETAIL": "PAG Merchant Order",
         "PAG_CUST_CONTACT": "",
         "PAG_CUST_NAME": "",
-        "PAG_CUST_DESC": "",
+        "PAG_CUST_DESC": "anon",
         "PAG_MAC": "Some-Random-MAC-String-For-FPX", 
         # Any other hardcoded fields for the /fpx/submit stage should go here
     }

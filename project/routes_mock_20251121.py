@@ -207,8 +207,6 @@ def mock_mpreq():
     #     return f"Transaction Registration Failed: {error_message}", 500
 
 
-
-
     # 3. Construct the data payload for fpx/init
     # This payload is for the second request, which initiates the bank selection screen.
     fpx_data_payload = {

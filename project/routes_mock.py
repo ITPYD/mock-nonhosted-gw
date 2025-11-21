@@ -369,19 +369,22 @@ def mock_mpreq():
     # 2. Construct initiation payload (Merge original data and new PAG fields)
     
     # Start the payload with ALL original form data
-    redirect_payload = dict(original_data)
+    #redirect_payload = dict(original_data)
     
     # Overwrite/Add the specific fields required for the next proxy hop (/fpx/init)
     # This ensures that even if 'MPI_MERC_ID' was missing, 'PAG_MERCHANT_ID' is still set.
-    redirect_payload.update({
+    redirect_payload = {
         "PAG_MERCHANT_ID": original_data.get('MPI_MERC_ID', '000000000000033'),
         "PAG_CUST_EMAIL": original_data.get('MPI_EMAIL', 'test@example.com'),
         "PAG_TRANS_ID": original_data.get('MPI_TRXN_ID', 'mdl_default_id'),
         "PAG_CHANNEL_NAME": default_channel_name,
         "PAG_ORDER_DETAIL": "PAG Merchant Order",
+        "PAG_CUST_CONTACT": "",
+        "PAG_CUST_NAME": "",
+        "PAG_CUST_DESC": "",
         "PAG_MAC": "Some-Random-MAC-String-For-FPX", 
         # Any other hardcoded fields for the /fpx/submit stage should go here
-    })
+    }
     
     # Create hidden inputs from the payload
     hidden_inputs = ''.join(

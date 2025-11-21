@@ -113,9 +113,6 @@ def _proxy_request(path, content_type, prefix=""):
 # MOCK ROUTES (API ENDPOINTS)
 #------------------------
 
-
-
-# --- NEW HELPER FUNCTION FOR CUSTOM PAYLOADS ---
 def _custom_proxy_request(path, data_payload, prefix=""):
     """
     Helper function to proxy requests (POST) with a SPECIFIC custom data payload.
@@ -140,9 +137,13 @@ def _custom_proxy_request(path, data_payload, prefix=""):
         # Simulating a form that tries to redirect the top window
         response_content = b"""
         <html>
-        <head><script>window.top.location.href='/redirect'</script></head>
+        <head>
+            <!-- Original: window.top.location.href='https://devlinkv3.paydee.co/redirect' -->
+            <script>window.top.location.href='https://devlinkv3.paydee.co/redirect'</script>
+        </head>
         <body>
-            <form method="POST" action="/final_action" target="_top">
+            <!-- Original: target="_top" -->
+            <form method="POST" action="https://devlinkv3.paydee.co/redirect" target="_top">
                 <input type="submit" value="Continue">
             </form>
         </body>
@@ -153,7 +154,7 @@ def _custom_proxy_request(path, data_payload, prefix=""):
         print(response_content.decode('utf-8', errors='ignore'))
         print("-------------------------------------------------------------------")
 
-        # === START: CONTENT PATCHING (CRITICAL FIX FOR TOP NAVIGATION) ===
+        # === START: CONTENT PATCHING (CRITICAL FIXES) ===
         
         # 4. CRITICAL: Prevent cross-origin navigation blocks by forcing the navigation 
         #    to happen within the current frame (iframe).
@@ -169,29 +170,41 @@ def _custom_proxy_request(path, data_payload, prefix=""):
             print("--- PATCH: Changing window.top/parent.location to window.self.location ---")
             response_content = response_content.replace(b'window.top.location', b'window.self.location')
             response_content = response_content.replace(b'window.parent.location', b'window.self.location')
+            
+        # 5. CRITICAL: REROUTE 404 URL TO LOCAL PROXY.
+        # This fixes the 404 by redirecting the browser back to your server's local route 
+        # instead of the remote server's (404-ing) public URL.
+        REMOTE_REDIRECT_URL = b'https://devlinkv3.paydee.co/redirect' 
+        LOCAL_REDIRECT_PATH = b'/mpigw/payment-status/redirect' # Use an existing webhook or a new local route
+        
+        if REMOTE_REDIRECT_URL in response_content:
+            print(f"--- PATCH: Rewriting 404 redirect URL from {REMOTE_REDIRECT_URL} to {LOCAL_REDIRECT_PATH} ---")
+            response_content = response_content.replace(REMOTE_REDIRECT_URL, LOCAL_REDIRECT_PATH)
 
-        # The rest of your domain patching follows here:
+
+        # The rest of your domain patching (now uncommented):
         
         # 1. 3DS Domain Patching (if applicable)
         REMOTE_3DS_PREFIX = b'https://paydee-test.as1.gpayments.net'
         LOCAL_3DS_PREFIX = b'/mock/3ds'
-        # if REMOTE_3DS_PREFIX in response_content:
-        #     print("--- PATCH: 3DS Domain Fix Applied ---")
-        #     response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
+        if REMOTE_3DS_PREFIX in response_content:
+            print("--- PATCH: 3DS Domain Fix Applied ---")
+            response_content = response_content.replace(REMOTE_3DS_PREFIX, LOCAL_3DS_PREFIX)
 
         # 2. MPI Domain Patching
         REMOTE_MPI_DOMAIN = app.config["REMOTE_MPI_DOMAIN"].encode('utf-8')
         LOCAL_ROOT_PATH = b'/'
-        # if REMOTE_MPI_DOMAIN in response_content:
-        #     print("--- PATCH: MPI Domain Fix Applied ---")
-        #     response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
+        if REMOTE_MPI_DOMAIN in response_content:
+            print("--- PATCH: MPI Domain Fix Applied ---")
+            response_content = response_content.replace(REMOTE_MPI_DOMAIN, LOCAL_ROOT_PATH)
 
         # 3. Webhook Patching (The final redirect URL)
+        # Note: The new Patch 5 might cover this if this redirect is also the final step.
         DEFAULT_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/mpi/payment-status/redirect'
         LOCAL_WEBHOOK = b'https://devlinkv2.paydee.co/mpigw/payment/status'
-        # if DEFAULT_WEBHOOK in response_content:
-        #     print("--- PATCH: Default Webhook Fix Applied ---")
-        #     response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
+        if DEFAULT_WEBHOOK in response_content:
+            print("--- PATCH: Default Webhook Fix Applied ---")
+            response_content = response_content.replace(DEFAULT_WEBHOOK, LOCAL_WEBHOOK)
         # === END: CONTENT PATCHING ===
             
         print(f"--- Response: {r_status_code} ---")

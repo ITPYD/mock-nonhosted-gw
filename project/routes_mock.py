@@ -164,7 +164,7 @@ def _custom_proxy_request(path, data_payload, prefix=""):
             
         # 4. Replace target=top
         OLD_TARGET = b'target="_top"'
-        NEW_TARGET = b'target="_self"'
+        NEW_TARGET = b''
         if OLD_TARGET in response_content:
             response_content = response_content.replace(OLD_TARGET, NEW_TARGET)
 

@@ -48,4 +48,4 @@ app.config['MAIL_DEBUG'] = os.environ.get('MAIL_DEBUG', 'true').lower() in ('tru
 
 mail = Mail(app)
 
-from project import routes, routes_mock, routes_test, models
+from project import routes, routes_mock, routes_test

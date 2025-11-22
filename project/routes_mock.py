@@ -2,7 +2,7 @@ import requests, os, random
 from project import app
 from datetime import date, time, datetime, timedelta
 from flask import current_app, render_template, redirect, url_for, flash, request, send_file, send_from_directory, abort, Response, Flask, jsonify
-from werkzeug.utils import safe_join # This import should now be resolved
+from werkzeug.utils import safe_join
 import json # You'll need this import if not already present
 
 
@@ -388,7 +388,8 @@ def mock_mpreq():
     
     # Create hidden inputs from the payload
     hidden_inputs = ''.join(
-        f'<input type="hidden" name="{k}" value="{v}">' 
+        # Use html.escape to prevent XSS from form values
+        f'<input type="hidden" name="{html.escape(str(k))}" value="{html.escape(str(v))}">'
         for k, v in redirect_payload.items()
     )
 

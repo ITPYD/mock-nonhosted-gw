@@ -11,7 +11,10 @@ import os
 app = Flask(__name__)
 
 # Load configuration from environment variables
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-default-secret-key-for-development')
+SECRET_KEY = os.environ.get('SECRET_KEY', "LwjHErBBg2bLrHGgqbJsIVdT+YM56CPWJDTnUVfs0Yw=")
+if not SECRET_KEY:
+    raise ValueError("No SECRET_KEY set for Flask application")
+app.config['SECRET_KEY'] = SECRET_KEY
 
 
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024

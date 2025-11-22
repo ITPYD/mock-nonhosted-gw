@@ -3,7 +3,6 @@ import requests
 import json
 import base64
 from project.key import Key
-from flask import Response
 from project import app
 #from datetime import datetime
 

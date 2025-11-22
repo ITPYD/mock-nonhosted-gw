@@ -187,9 +187,11 @@ def mock_mpreq():
     EXTERNAL_INIT_URL = app.config["EXTERNAL_INIT_URL"]
 
     original_data = dict(request.form)
+    print(f"--- DEBUG: original_data ---\n{original_data}")
+
     # Get the channel ID from original data, retaining its casing.
     channel_id = original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank')
-    trx_type = original_data.get('MPI_TRXN_TYPE', 'SALES'),
+    trx_type = original_data.get('MPI_TRXN_TYPE', 'SALES')
     
     # Use the uppercase version for internal comparison logic (Fpx vs Wallet)
     channel_id_upper = channel_id.upper()
@@ -205,6 +207,7 @@ def mock_mpreq():
     if trx_type != "SALES":
         return _proxy_request("/mpReq", 'application/x-www-form-urlencoded', prefix="mock")
     
+
     ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
     
       

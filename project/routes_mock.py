@@ -192,16 +192,21 @@ def mock_mpreq():
     # Get the channel ID from original data, retaining its casing.
     channel_id = original_data.get('MPI_PAYMENT_CHANNEL_ID', 'Public Bank')
     trx_type = original_data.get('MPI_TRXN_TYPE', 'SALES')
-    
-    # Use the uppercase version for internal comparison logic (Fpx vs Wallet)
+       
+     # Use the uppercase version for internal comparison logic (Fpx vs Wallet)
     channel_id_upper = channel_id.upper()
-    
+    error = False
+    keyword = ""
+
     if channel_id_upper in ('BOOST', 'GRABPAY', 'TNG-EWALLET', 'MB2U_QRPAY-PUSH', 'SHOPEEPAY', 'ALIPAY', 'GUPOP'):
         default_channel_name = channel_id 
         ext_url = f"{EXTERNAL_INIT_URL}/ewallets/init"
+        keyword = f"#ewallet-tab"
     else:
         default_channel_name = channel_id
         ext_url = f"{EXTERNAL_INIT_URL}/fpx/init"
+        keyword = f"#fpx-tab"
+
 
     # 1. Proxies mercReq
     if trx_type != "SALES":
@@ -209,12 +214,15 @@ def mock_mpreq():
     
 
     ret = _proxy_request("/mercReq", 'application/x-www-form-urlencoded', prefix="mock")
-    
-      
+          
     # Check the result of the mercReq proxy call using the Response object's .status_code
     if ret.status_code != 200: 
         error_message = ret.get_data(as_text=True) 
         return Response(f"Transaction Registration Failed: {error_message}", status=ret.status_code)
+
+    # Verify if the e-wallet or fpx tab was returned
+    if keyword not in ret.content.decode('utf-8', errors='ignore'):
+        return ret
 
     # 2. Construct initiation payload
     redirect_payload = {

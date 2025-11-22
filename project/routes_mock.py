@@ -221,7 +221,7 @@ def mock_mpreq():
         return Response(f"Transaction Registration Failed: {error_message}", status=ret.status_code)
 
     # Verify if the e-wallet or fpx tab was returned
-    if keyword not in ret.content.decode('utf-8', errors='ignore'):
+    if keyword not in ret.get_data(as_text=True):
         return ret
 
     # 2. Construct initiation payload

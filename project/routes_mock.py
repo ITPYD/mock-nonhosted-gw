@@ -56,6 +56,11 @@ def _proxy_request(path, content_type, prefix=""):
             print(response_content.decode('utf-8', errors='ignore'))
             print("-----------------------------------------------")
 
+        if path == "/mkReq":
+            print("--- DEBUG: FULL CONTENT FOR /mercReq RESPONSE ---")
+            # Decode the content to print the URL string clearly
+            print(response_content.decode('utf-8', errors='ignore'))
+            print("-----------------------------------------------")
 
         # === START: CROSS-ORIGIN FIX (3DS) ===
         # We only need to do this when the response is HTML and contains the specific 3DS domain.
